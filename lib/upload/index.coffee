@@ -70,9 +70,12 @@ exports.exec = ({design, user, password, host}={}, done) ->
       body: design
       json: true
     , (err, res, body) ->
+      return done() if res?.statusCode == 200
       if err
         console.error(err)
         return done(err)
-
-      console.log(body) if res.statusCode != 201
-      done()
+      else
+        console.log(body)
+        error = new Error(body.error)
+        error.error_details = body.error_details
+        done(error)
