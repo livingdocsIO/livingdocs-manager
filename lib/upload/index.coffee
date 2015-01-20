@@ -1,5 +1,6 @@
 assert = require('assert')
 request = require('request')
+url = require('url')
 
 
 exports.askOptions = (options, done) ->
@@ -44,6 +45,9 @@ authenticate = ({host, user, password}, callback) ->
 exports.exec = ({design, user, password, host}={}, done) ->
   try
     assert(typeof design is 'object', "The parameter 'design' is required.")
+    assert(typeof design.name is 'string', "The design requires a property 'name'.")
+    assert(typeof design.version is 'string', "The design requires a property 'version'.")
+
     assert(typeof user is 'string', "The parameter 'user' is required")
     assert(typeof password is 'string', "The parameter 'password' is required")
     assert(typeof host is 'string', "The parameter 'host' is required")
@@ -56,12 +60,12 @@ exports.exec = ({design, user, password, host}={}, done) ->
 
     css = []
     for asset in design?.assets?.css || []
-      css.push(url.resolve("http://livingdocs-designs.s3.amazonaws.com/timeline/0.0.1/", asset))
+      css.push(url.resolve("http://livingdocs-designs.s3.amazonaws.com/#{design.name}/#{design.version}/", asset))
     design.assets.css = css if css.length
 
     request
       method: 'put'
-      url: "http://api.livingdocs.io/designs/#{design.name}/#{design.version}"
+      url: host+"/designs/#{design.name}/#{design.version}"
       headers: Authorization: "Bearer #{res.access_token}"
       body: design
       json: true
