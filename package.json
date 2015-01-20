@@ -1,0 +1,32 @@
+{
+  "name": "livingdocs-design-manager",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": {
+    "livingdocs-design-manager": "./bin/index.js",
+    "ldm": "./bin/index.js"
+  },
+  "author": "Marc Bachmann <marc@upfront.io>",
+  "license": "LGPL3",
+  "dependencies": {
+    "async": "^0.9.0",
+    "cheerio": "^0.18.0",
+    "coffee-script": "^1.8.0",
+    "glob": "^4.3.5",
+    "html-minifier": "^0.6.9",
+    "inquirer": "^0.8.0",
+    "lodash": "^2.4.1",
+    "minimist": "^1.1.0",
+    "mkdirp": "^0.5.0",
+    "npmlog": "^1.0.0",
+    "request": "^2.51.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/upfrontIO/livingdocs-design-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/upfrontIO/livingdocs-design-manager/issues"
+  },
+  "homepage": "https://github.com/upfrontIO/livingdocs-design-manager"
+}
