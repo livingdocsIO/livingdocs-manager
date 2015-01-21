@@ -1,6 +1,5 @@
 EventEmitter = require('events').EventEmitter
 
-file = require('../../utils/file')
 helpers = require('../../utils/helpers')
 Template = require('./template')
 
@@ -25,12 +24,17 @@ class Design extends EventEmitter
   initConfigFile: (filePath, callback) ->
     @debug('read config file')
 
-    file.readJson filePath, (err, config) =>
+    fs.readFile filePath, (err, file) =>
       if err
         if err.errno == 34 then err = new Error("The design has no configuration file.")
-        callback(err)
-      else
-        @initConfig(config, callback)
+        return callback(err)
+
+      try
+        json = JSON.parse(file)
+      catch err
+        return callback(err)
+
+      @initConfig(json, callback)
 
 
   addTemplate: (templateName, templateString) ->
@@ -43,7 +47,7 @@ class Design extends EventEmitter
   addTemplateFile: (filePath, callback) ->
     templateName = helpers.filenameToTemplatename(filePath)
     @debug("read template '#{templateName}'")
-    file.readFile filePath, encoding:'utf8', (err, templateString) =>
+    fs.readFile filePath, (err, templateString) =>
       return callback(err) if err
       @addTemplate(templateName, templateString)
       callback()
@@ -72,14 +76,14 @@ class Design extends EventEmitter
     json_dest = dest.replace(/\.js/, '.json')
 
     @debug('save design.js file')
-    file.write javascript_dest, javascript, (err) =>
+    fs.writeFile javascript_dest, javascript, (err) =>
       if err
         @emit('error', err)
         return @emit('end')
 
       @debug('saved design.js file')
       @debug('save design.json file')
-      file.write json_dest, json, (err) =>
+      fs.writeFile json_dest, json, (err) =>
         @emit('error', err) if err
         @debug('saved design.json file') unless err
         @emit('end')

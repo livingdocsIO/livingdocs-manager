@@ -35,7 +35,7 @@ commands =
         help:       show this information
         version:    show the cli version
         publish:    upload the design in the current directory
-        compile:    process the design in the current directory
+        build:      process the design in the current directory
       """
 
 
@@ -48,7 +48,6 @@ commands =
   publish:
     description: 'Show the script version'
     exec: (config) ->
-
       minimist = require('minimist')
       args = minimist process.argv.splice(3),
         string: ['user', 'password', 'host']
@@ -68,26 +67,26 @@ commands =
           log.info('upload', 'Uploaded the design %s@%s', options.design.name, options.design.version)
 
 
-  compile:
+  build:
     description: 'Compile the design'
     exec: (config, callback) ->
       path = require('path')
       error = null
       cwd = process.cwd()
-      Design.compile(src: cwd, dest: cwd)
+      Design.build(src: cwd, dest: cwd)
       .on 'debug', (debug) ->
-        log.verbose('compile', debug)
+        log.verbose('build', debug)
 
       .on 'warn', (warning) ->
-        log.warn('compile', warning.stack)
+        log.warn('build', warning.stack)
 
       .on 'error', (err) ->
         error = err
 
       .on 'end', ->
         if error
-          log.error('compile', error)
+          log.error('build', error)
         else
-          log.info('compile', 'Design compiled...')
+          log.info('build', 'Design compiled...')
 
         callback?(error)

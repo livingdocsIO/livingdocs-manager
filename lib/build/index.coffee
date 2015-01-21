@@ -2,8 +2,6 @@ path = require('path')
 async = require('async')
 Glob = require('glob').Glob
 
-file = require('../utils/file')
-helpers = require('../utils/helpers')
 Design = require('./models/design')
 _ = require('lodash')
 
