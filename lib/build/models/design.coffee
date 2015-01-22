@@ -1,3 +1,4 @@
+fs = require('fs')
 EventEmitter = require('events').EventEmitter
 
 helpers = require('../../utils/helpers')
@@ -78,6 +79,7 @@ class Design extends EventEmitter
     @debug('save design.js file')
     fs.writeFile javascript_dest, javascript, (err) =>
       if err
+        if err.errno == 34 then err = new Error("The directory #{fs.dirname(javascript_dest)} doesn't exist.")
         @emit('error', err)
         return @emit('end')
 
