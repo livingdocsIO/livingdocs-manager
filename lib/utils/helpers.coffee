@@ -1,7 +1,5 @@
 path = require('path')
 htmlmin = require('html-minifier')
-file = require('./file')
-
 
 exports.filenameToTemplatename = (string) ->
   strings = string.replace(/\.[a-z]{2,4}$/, '').split('/')
