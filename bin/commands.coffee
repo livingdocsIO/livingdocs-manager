@@ -58,13 +58,10 @@ commands =
 
       upload = require('../lib/upload')
       upload.askOptions args, (options) ->
-
-        cwd = process.cwd()
-        design = JSON.parse(require('fs').readFileSync(path.join(cwd, 'design.json')))
-        options = _.extend({}, options, design: design)
-        upload.exec options, (err) ->
+        options = _.extend({}, options, cwd: process.cwd())
+        upload.exec options, (err, {design}={}) ->
           return log.error(err) if err
-          log.info('upload', 'Uploaded the design %s@%s', options.design.name, options.design.version)
+          log.info('upload', 'Uploaded the design %s@%s', design.name, design.version)
 
 
   build:

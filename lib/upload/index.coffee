@@ -1,10 +1,13 @@
+fs = require('fs')
+path = require('path')
 assert = require('assert')
 request = require('request')
 url = require('url')
+async = require('async')
 
 
-exports.askOptions = (options, done) ->
-  return done(options) if options.host && options.user && options.password
+exports.askOptions = (options, callback) ->
+  return callback(options) if options.host && options.user && options.password
   inquirer = require('inquirer')
   inquirer.prompt [
     name: 'host'
@@ -25,10 +28,10 @@ exports.askOptions = (options, done) ->
       return true if val.trim() && val.length > 5
       'The password must contain more than 5 characters.'
   ], (options) ->
-    done(options)
+    callback(options)
 
 
-authenticate = ({host, user, password}, callback) ->
+exports.authenticate = ({host, user, password}, callback) ->
   request
     method: 'post'
     url: host+'/authenticate'
@@ -38,12 +41,13 @@ authenticate = ({host, user, password}, callback) ->
     return callback("Authentication: " + err.message) if err
     return callback(new Error("Authentication: Credentials invalid")) if res.statusCode == 401
     return callback(new Error("Authentication: " + body.error)) if res.statusCode != 200
-    callback(null, body)
+    callback(null, user: body.user, accessToken: body.access_token)
 
 
 # upload to the ☁️
-exports.exec = ({design, user, password, host}={}, done) ->
+exports.exec = ({cwd, user, password, host}={}, callback) ->
   try
+    design = JSON.parse(fs.readFileSync(path.join(cwd, 'design.json')))
     assert(typeof design is 'object', "The parameter 'design' is required.")
     assert(typeof design.name is 'string', "The design requires a property 'name'.")
     assert(typeof design.version is 'string', "The design requires a property 'version'.")
@@ -52,30 +56,63 @@ exports.exec = ({design, user, password, host}={}, done) ->
     assert(typeof password is 'string', "The parameter 'password' is required")
     assert(typeof host is 'string', "The parameter 'host' is required")
   catch err
-    return done(err)
+    return callback(err)
 
-  authenticate {host, user, password}, (err, res) ->
+  exports.authenticate {host, user, password}, (err, {user, accessToken:token}={}) ->
+    return callback(err) if err
+    exports.putJson {design, token, host}, (err, design) ->
+      return callback(err) if err
+      exports.uploadAssets {cwd, design, host, token}, (err) ->
+        return callback(err) if err
+        callback(null, {design})
+
+
+exports.putJson = ({design, host, token}, callback) ->
+  request
+    method: 'put'
+    url: host+"/designs/#{design.name}/#{design.version}"
+    headers: Authorization: "Bearer #{token}"
+    body: design
+    json: true
+  , (err, res, body) ->
+    return callback(null, body) if res?.statusCode == 200
     if err
-      return done(err)
+      console.error(err)
+      return callback(err)
+    else
+      error = new Error(body.error || "Unhandled response code #{statusCode}")
+      error.error_details = body.error_details
+      callback(error)
 
-    css = []
-    for asset in design?.assets?.css || []
-      css.push(url.resolve("http://livingdocs-designs.s3.amazonaws.com/#{design.name}/#{design.version}/", asset))
-    design.assets.css = css if css.length
 
-    request
-      method: 'put'
-      url: host+"/designs/#{design.name}/#{design.version}"
-      headers: Authorization: "Bearer #{res.access_token}"
-      body: design
-      json: true
-    , (err, res, body) ->
-      return done() if res?.statusCode == 200
-      if err
-        console.error(err)
-        return done(err)
-      else
-        console.log(body)
-        error = new Error(body.error)
-        error.error_details = body.error_details
-        done(error)
+exports.uploadAssets = ({cwd, design, host, token}, callback) ->
+  Glob = require('glob')
+  new Glob '**/*', cwd: cwd, (err, files) ->
+    return callback(err) if err
+
+    files = files.filter (file) -> return !/^design.js(on)?$/.test(file)
+    async.eachLimit files, 10, (file, done) ->
+      file = path.join(cwd, file)
+      fs.stat file, (err, stats) ->
+        return done(err) if err || !stats.isFile()
+        exports.uploadAsset({cwd, design, host, token, file}, done)
+    , callback
+
+
+exports.uploadAsset = ({cwd, design, host, token, file}, callback) ->
+  relativePath = file.replace(cwd, '')
+  request
+    method: 'post'
+    url: host+"/designs/#{design.name}/#{design.version}/assets"
+    headers:
+      Authorization: "Bearer #{token}"
+    formData:
+      path: relativePath
+      file: fs.createReadStream(file)
+  , (err, res, body) ->
+    return callback(err) if err
+    if res.statusCode == 200
+      console.log("Uploaded the file '#{relativePath}'")
+    else
+      console.log(body)
+    callback()
