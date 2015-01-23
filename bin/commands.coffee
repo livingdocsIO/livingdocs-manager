@@ -67,10 +67,20 @@ commands =
   build:
     description: 'Compile the design'
     exec: (config, callback) ->
-      path = require('path')
+      minimist = require('minimist')
+      argv = process.argv.splice(3)
+      args = minimist argv,
+        string: ['source', 'destination']
+        alias:
+          s: 'source'
+          src: 'source'
+          d: 'destination'
+          dst: 'destination'
+          dest: 'destination'
+
       error = null
       cwd = process.cwd()
-      Design.build(src: cwd, dest: cwd)
+      Design.build(src: args.source || cwd, dest: args.destination || cwd)
       .on 'debug', (debug) ->
         log.verbose('build', debug)
 
