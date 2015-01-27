@@ -1,4 +1,5 @@
 fs = require('fs')
+path = require('path')
 EventEmitter = require('events').EventEmitter
 
 helpers = require('../../utils/helpers')
@@ -27,7 +28,7 @@ class Design extends EventEmitter
 
     fs.readFile filePath, (err, file) =>
       if err
-        if err.errno == 34 then err = new Error("The design has no configuration file.")
+        if err.errno == 34 then err = new Error("The design in '#{path.dirname(filePath)}/' has no '#{path.basename(filePath)}' file.")
         return callback(err)
 
       try

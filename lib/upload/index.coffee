@@ -4,6 +4,7 @@ assert = require('assert')
 request = require('request')
 url = require('url')
 async = require('async')
+log = require('npmlog')
 
 
 exports.askOptions = (options, callback) ->
@@ -75,14 +76,11 @@ exports.putJson = ({design, host, token}, callback) ->
     body: design
     json: true
   , (err, res, body) ->
+    return callback(err) if err
     return callback(null, body) if res?.statusCode == 200
-    if err
-      console.error(err)
-      return callback(err)
-    else
-      error = new Error(body.error || "Unhandled response code #{statusCode}")
-      error.error_details = body.error_details
-      callback(error)
+    error = new Error(body.error || "Unhandled response code #{statusCode}")
+    error.error_details = body.error_details
+    callback(error)
 
 
 exports.uploadAssets = ({cwd, design, host, token}, callback) ->
@@ -112,7 +110,7 @@ exports.uploadAsset = ({cwd, design, host, token, file}, callback) ->
   , (err, res, body) ->
     return callback(err) if err
     if res.statusCode == 200
-      console.log("Uploaded the file '#{relativePath}'")
+      log.info('asset', "Uploaded the file '#{relativePath}'")
     else
-      console.log(body)
+      log.error('asset', body)
     callback()

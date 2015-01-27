@@ -50,18 +50,21 @@ commands =
     exec: (config) ->
       minimist = require('minimist')
       args = minimist process.argv.splice(3),
-        string: ['user', 'password', 'host']
+        string: ['user', 'password', 'host', 'source']
         alias:
           h: 'host'
           u: 'user'
           p: 'password'
+          s: 'source'
+          src: 'source'
 
+      cwd = args.source || args._[0] || process.cwd()
       upload = require('../lib/upload')
       upload.askOptions args, (options) ->
-        options = _.extend({}, options, cwd: process.cwd())
+        options = _.extend({}, options, cwd: cwd)
         upload.exec options, (err, {design}={}) ->
-          return log.error(err) if err
-          log.info('upload', 'Uploaded the design %s@%s', design.name, design.version)
+          return log.error('publish', err) if err
+          log.info('publish', 'Published the design %s@%s', design.name, design.version)
 
 
   build:
@@ -79,8 +82,8 @@ commands =
           dest: 'destination'
 
       error = null
-      cwd = process.cwd()
-      Design.build(src: args.source || cwd, dest: args.destination || cwd)
+      cwd = args.destination || args._[0] || process.cwd()
+      Design.build(src: args.source || cwd, dest: cwd)
       .on 'debug', (debug) ->
         log.verbose('build', debug)
 
