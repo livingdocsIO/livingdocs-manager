@@ -28,7 +28,7 @@ commands =
     description: 'Show all commands'
     exec: ->
       console.log """
-      Usage: livingdocs <command>
+      Usage: ldm <command>
 
       where: <command> is one of:
 
@@ -82,13 +82,14 @@ commands =
           dest: 'destination'
 
       error = null
-      cwd = args.destination || args._[0] || process.cwd()
-      Design.build(src: args.source || cwd, dest: cwd)
+      args.source ?= args._[0] || process.cwd()
+      args.destination ?= args._[1] || process.cwd()
+      Design.build(src: args.source, dest: args.destination)
       .on 'debug', (debug) ->
         log.verbose('build', debug)
 
       .on 'warn', (warning) ->
-        log.warn('build', warning.stack)
+        log.warn('build', warning)
 
       .on 'error', (err) ->
         error = err
