@@ -78,8 +78,8 @@ class Design extends EventEmitter
     json = @toJson(minify)
     json_dest = dest.replace(/\.js/, '.json')
 
-    @debug('save design.js file')
-    mkdirp path.dirname javascript_dest, (err) ->
+    @debug("save design.js file to #{javascript_dest}")
+    mkdirp path.dirname(javascript_dest), (err) =>
       if err
         @emit('error', err)
         return @emit('end')
