@@ -62,9 +62,9 @@ commands =
       upload = require('../lib/upload')
       upload.askOptions args, (options) ->
         options = _.extend({}, options, cwd: cwd)
-        upload.exec options, (err, {design}={}) ->
+        upload.exec options, (err, {design, url}={}) ->
           return log.error('publish', err) if err
-          log.info('publish', 'Published the design %s@%s', design.name, design.version)
+          log.info('publish', 'Published the design %s@%s to %s', design.name, design.version, url)
 
 
   build:

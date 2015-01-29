@@ -61,23 +61,27 @@ exports.exec = ({cwd, user, password, host}={}, callback) ->
 
   exports.authenticate {host, user, password}, (err, {user, accessToken:token}={}) ->
     return callback(err) if err
-    exports.putJson {design, token, host}, (err, design) ->
+    exports.putJson {design, token, host}, (err, {design, url}={}) ->
       return callback(err) if err
       exports.uploadAssets {cwd, design, host, token}, (err) ->
         return callback(err) if err
-        callback(null, {design})
+        callback(null, {design, url})
 
 
 exports.putJson = ({design, host, token}, callback) ->
+  designUrl = host+"/designs/#{design.name}/#{design.version}"
   request
     method: 'put'
-    url: host+"/designs/#{design.name}/#{design.version}"
+    url: designUrl
     headers: Authorization: "Bearer #{token}"
     body: design
     json: true
   , (err, res, body) ->
     return callback(err) if err
-    return callback(null, body) if res?.statusCode == 200
+    if res?.statusCode == 200
+      body = {design: design, url: designUrl}
+      return callback(null, body)
+
     error = new Error(body.error || "Unhandled response code #{statusCode}")
     error.error_details = body.error_details
     callback(error)
