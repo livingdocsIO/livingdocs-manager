@@ -1,4 +1,5 @@
 fs = require('fs')
+mkdirp = require('mkdirp')
 path = require('path')
 EventEmitter = require('events').EventEmitter
 
@@ -78,18 +79,22 @@ class Design extends EventEmitter
     json_dest = dest.replace(/\.js/, '.json')
 
     @debug('save design.js file')
-    fs.writeFile javascript_dest, javascript, (err) =>
+    mkdirp path.dirname javascript_dest, (err) ->
       if err
-        if err.errno == 34 then err = new Error("The directory #{fs.dirname(javascript_dest)} doesn't exist.")
         @emit('error', err)
         return @emit('end')
 
-      @debug('saved design.js file')
-      @debug('save design.json file')
-      fs.writeFile json_dest, json, (err) =>
-        @emit('error', err) if err
-        @debug('saved design.json file') unless err
-        @emit('end')
+      fs.writeFile javascript_dest, javascript, (err) =>
+        if err
+          @emit('error', err)
+          return @emit('end')
+
+        @debug('saved design.js file')
+        @debug('save design.json file')
+        fs.writeFile json_dest, json, (err) =>
+          @emit('error', err) if err
+          @debug('saved design.json file') unless err
+          @emit('end')
 
 
   debug: (string) ->
