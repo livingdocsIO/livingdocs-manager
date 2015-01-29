@@ -24,12 +24,12 @@
 
   // Error handlers
   process.on('SIGTERM', function(err){
-    if (err) log.error(err);
+    if (err) log.error('cli', err);
     process.exit(1);
   });
 
   process.on('uncaughtException', function(err){
-    log.error(err);
+    log.error('cli', err);
     process.exit(1);
   });
 
