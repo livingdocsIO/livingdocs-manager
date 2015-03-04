@@ -113,8 +113,8 @@ exports.uploadAsset = ({cwd, design, host, token, file}, callback) ->
       file: fs.createReadStream(file)
   , (err, res, body) ->
     return callback(err) if err
-    if res.statusCode == 200
-      log.info('asset', "Uploaded the file '#{relativePath}'")
+    if res.statusCode in [200, 201]
+      log.info('asset', "Succeeded to upload the file '#{relativePath}'")
     else
       log.error('asset', body)
     callback()
