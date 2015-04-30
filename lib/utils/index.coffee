@@ -11,7 +11,7 @@ exports.minifyHtml = (html, options, templateName, ee) ->
     try
       htmlmin.minify(html, options.minify)
     catch err
-      warning = ">> Template \"#{templateName}\": HTML minify error\n #{err}\n"
+      warning = ">> Template '#{templateName}': HTML minify error\n #{err}\n"
       if ee
         ee.emit('warn', warning)
       else
@@ -21,3 +21,7 @@ exports.minifyHtml = (html, options, templateName, ee) ->
 
   else
     html.trim()
+
+
+exports.pathToRelativeUrl = (cwd, filepath) ->
+  filepath.replace(cwd, '').split(path.delimiter).join('/')

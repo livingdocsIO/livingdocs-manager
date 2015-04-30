@@ -5,7 +5,7 @@ request = require('request')
 url = require('url')
 async = require('async')
 log = require('npmlog')
-
+utils = require('../utils')
 
 exports.askOptions = (options, callback) ->
   return callback(options) if options.host && options.user && options.password
@@ -102,7 +102,7 @@ exports.uploadAssets = ({cwd, design, host, token}, callback) ->
 
 
 exports.uploadAsset = ({cwd, design, host, token, file}, callback) ->
-  relativePath = file.replace(cwd, '')
+  relativePath = utils.pathToRelativeUrl(cwd, file)
   request
     method: 'post'
     url: host+"/designs/#{design.name}/#{design.version}/assets"

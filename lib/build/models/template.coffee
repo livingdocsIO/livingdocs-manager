@@ -1,5 +1,5 @@
 cheerio = require("cheerio")
-helpers = require("../../utils/helpers")
+utils = require("../../utils")
 
 
 class Template
@@ -23,7 +23,7 @@ class Template
       err = new Error("The Design '#{design.config.name}', Template '#{templateName}' contains more than one root element")
       design.warn(err)
 
-    html = helpers.minifyHtml($.html(), options, @name, design)
+    html = utils.minifyHtml($.html(), options, @name, design)
     design.debug("parsed template '#{templateName}'")
     new Template(templateName, html, config)
 

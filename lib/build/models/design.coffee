@@ -3,7 +3,7 @@ mkdirp = require('mkdirp')
 path = require('path')
 EventEmitter = require('events').EventEmitter
 
-helpers = require('../../utils/helpers')
+utils = require('../../utils')
 Template = require('./template')
 
 
@@ -48,7 +48,7 @@ class Design extends EventEmitter
 
 
   addTemplateFile: (filePath, callback) ->
-    templateName = helpers.filenameToTemplatename(filePath)
+    templateName = utils.filenameToTemplatename(filePath)
     @debug("read template '#{templateName}'")
     fs.readFile filePath, (err, templateString) =>
       return callback(err) if err
