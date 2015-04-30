@@ -6,18 +6,25 @@ url = require('url')
 async = require('async')
 log = require('npmlog')
 utils = require('../utils')
+rc = require('rc')
+
 
 exports.askOptions = (options, callback) ->
   return callback(options) if options.host && options.user && options.password
+
+  conf = rc 'livingdocs',
+    host: "http://api.livingdocs.io"
+    user: "#{process.env.USER}@upfront.io"
+
   inquirer = require('inquirer')
   inquirer.prompt [
     name: 'host'
     message: 'Host'
-    default: options.host || "http://api.livingdocs.io"
+    default: conf.host
   ,
     name: 'user'
     message: 'Email'
-    default: options.user || "#{process.env.USER}@upfront.io"
+    default: conf.user
     validate: (val) -> /.*@.*/.test(val)
   ,
     name: 'password'
@@ -29,7 +36,18 @@ exports.askOptions = (options, callback) ->
       return true if val.trim() && val.length > 5
       'The password must contain more than 5 characters.'
   ], (options) ->
-    callback(options)
+    unless conf.configs?.length && process.env.HOME
+      configContent = JSON.stringify
+        host: options.host
+        user: options.user
+      , null, 2
+
+      fs.writeFile path.join(process.env.HOME, '.livingdocsrc'), configContent, (err) ->
+        log.warn(err) if err
+        callback(options)
+
+    else
+      callback(options)
 
 
 exports.authenticate = ({host, user, password}, callback) ->
