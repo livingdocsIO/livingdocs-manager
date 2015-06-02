@@ -20,7 +20,8 @@ class Design extends EventEmitter
 
     for prop in ['name', 'version']
       unless @config[prop]
-        return callback(new Error "Your configuration does not contain a '#{prop}'.")
+        err = new Error("Your configuration does not contain a '#{prop}'.")
+        return callback(err)
     callback()
 
 

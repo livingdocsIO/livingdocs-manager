@@ -1,4 +1,5 @@
 fs = require('fs')
+util = require('util')
 path = require('path')
 assert = require('assert')
 request = require('request')
@@ -42,7 +43,8 @@ exports.askOptions = (options, callback) ->
         user: options.user
       , null, 2
 
-      fs.writeFile path.join(process.env.HOME, '.livingdocsrc'), configContent, (err) ->
+      defaultConfigPath = path.join(process.env.HOME, '.livingdocs/config')
+      fs.writeFile defaultConfigPath, configContent, (err) ->
         log.warn(err) if err
         callback(options)
 
@@ -57,27 +59,40 @@ exports.authenticate = ({host, user, password}, callback) ->
     body: {username: user, password: password}
     json: true
   , (err, res, body) ->
-    return callback("Authentication: " + err.message) if err
-    return callback(new Error("Authentication: Credentials invalid")) if res.statusCode == 401
-    return callback(new Error("Authentication: " + body.error)) if res.statusCode != 200
+    if err
+      error = new Error("Authentication: #{err.message}")
+      error.stack = err.stack
+
+    if res.statusCode == 401
+      error = new Error("Authentication: Credentials invalid")
+
+    if res.statusCode != 200
+      error = new Error("Authentication: #{body.error}")
+
+    return callback(error) if error
     callback(null, user: body.user, accessToken: body.access_token)
+
+
+validateDesign = (design) ->
+  assert(typeof design is 'object', "The design must be an object literal.")
+  assert(typeof design.name is 'string', "The design requires a property 'design.name'.")
+  assert(typeof design.version is 'string', "The design requires a property 'design.version'.")
 
 
 # upload to the ☁️
 exports.exec = ({cwd, user, password, host}={}, callback) ->
   try
-    design = JSON.parse(fs.readFileSync(path.join(cwd, 'design.json')))
-    assert(typeof design is 'object', "The parameter 'design' is required.")
-    assert(typeof design.name is 'string', "The design requires a property 'name'.")
-    assert(typeof design.version is 'string', "The design requires a property 'version'.")
+    _.each ['user', 'password', 'host'], (prop) ->
+      assert(typeof design[prop] is 'string', "The parameter '#{prop}' is required")
 
-    assert(typeof user is 'string', "The parameter 'user' is required")
-    assert(typeof password is 'string', "The parameter 'password' is required")
-    assert(typeof host is 'string', "The parameter 'host' is required")
+    design = JSON.parse(fs.readFileSync(path.join(cwd, 'design.json')))
+    validateDesign(design)
+
   catch err
     return callback(err)
 
-  exports.authenticate {host, user, password}, (err, {user, accessToken:token}={}) ->
+  exports.authenticate {host, user, password}
+  , (err, {user, accessToken:token}={}) ->
     return callback(err) if err
     exports.putJson {design, token, host}, (err, {design, url}={}) ->
       return callback(err) if err
