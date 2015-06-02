@@ -38,8 +38,29 @@
     log.verbose("cli", "exit script. It ran for %ss.", parseInt(uptime))
   });
 
+  // Log update notifications
+  var updateNotifier = require('update-notifier');
+  var pkg = require('../package.json');
+  var notifier = updateNotifier({pkg: pkg, updateCheckInterval: 7*24*3600*1000})
 
-  commands = require('./commands');
+  if (notifier.update) {
+    console.log([
+      "",
+      "--------------------------------------------------------",
+      " Livingdocs Design Manager",
+      "--------------------------------------------------------",
+      " There's a %s update available:",
+      " The newest version is %s",
+      " You use version %s",
+      " Please run npm install -g livingdocs-design-manager`",
+      "--------------------------------------------------------",
+      ""
+    ].join('\n')  , notifier.update.type, notifier.update.latest, notifier.update.current)
+  }
+
+
+  // Initialize commands
+  var commands = require('./commands');
   commands.init(conf, function (err) {
     if (err) return log.error('cli', err);
     commands.trigger(action, conf);
