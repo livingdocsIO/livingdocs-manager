@@ -8,6 +8,7 @@ async = require('async')
 log = require('npmlog')
 utils = require('../utils')
 rc = require('rc')
+_ = require('lodash')
 
 
 exports.askOptions = (options, callback) ->
