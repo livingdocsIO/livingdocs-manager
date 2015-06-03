@@ -14,7 +14,7 @@ exports.askOptions = (options, callback) ->
   return callback(options) if options.host && options.user && options.password
 
   conf = rc 'livingdocs',
-    host: "http://api.livingdocs.io"
+    host: 'http://api.livingdocs.io'
     user: "#{process.env.USER}@upfront.io"
 
   inquirer = require('inquirer')
@@ -64,7 +64,7 @@ exports.authenticate = ({host, user, password}, callback) ->
       error.stack = err.stack
 
     if res.statusCode == 401
-      error = new Error("Authentication: Credentials invalid")
+      error = new Error('Authentication: Credentials invalid')
 
     if res.statusCode != 200
       error = new Error("Authentication: #{body.error}")
@@ -74,7 +74,7 @@ exports.authenticate = ({host, user, password}, callback) ->
 
 
 validateDesign = (design) ->
-  assert(typeof design is 'object', "The design must be an object literal.")
+  assert(typeof design is 'object', 'The design must be an object literal.')
   assert(typeof design.name is 'string', "The design requires a property 'design.name'.")
   assert(typeof design.version is 'string', "The design requires a property 'design.version'.")
 
@@ -92,7 +92,7 @@ exports.exec = ({cwd, user, password, host}={}, callback) ->
     return callback(err)
 
   exports.authenticate {host, user, password}
-  , (err, {user, accessToken:token}={}) ->
+  , (err, {user, accessToken: token}={}) ->
     return callback(err) if err
     exports.putJson {design, token, host}, (err, {design, url}={}) ->
       return callback(err) if err
