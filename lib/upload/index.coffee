@@ -83,11 +83,13 @@ validateDesign = (design) ->
 # upload to the ☁️
 exports.exec = ({cwd, user, password, host}={}, callback) ->
   try
-    _.each ['user', 'password', 'host'], (prop) ->
-      assert(typeof design[prop] is 'string', "The parameter '#{prop}' is required")
-
     design = JSON.parse(fs.readFileSync(path.join(cwd, 'design.json')))
-    validateDesign(design)
+    assert(typeof design is 'object', "The parameter 'design' is required.")
+    assert(typeof design.name is 'string', "The design requires a property 'name'.")
+    assert(typeof design.version is 'string', "The design requires a property 'version'.")
+    assert(typeof user is 'string', "The parameter 'user' is required")
+    assert(typeof password is 'string', "The parameter 'password' is required")
+    assert(typeof host is 'string', "The parameter 'host' is required")
 
   catch err
     return callback(err)
