@@ -1,4 +1,5 @@
 fs = require('fs')
+mkdirp = require('mkdirp')
 util = require('util')
 path = require('path')
 assert = require('assert')
@@ -13,7 +14,8 @@ Glob = require('glob')
 
 
 exports.askOptions = (options, callback) ->
-  return callback(options) if options.host && options.user && options.password
+  if options.host && options.user && options.password
+    return callback(options)
 
   conf = rc 'livingdocs',
     host: 'http://api.livingdocs.io'
@@ -43,16 +45,21 @@ exports.askOptions = (options, callback) ->
       'The password must contain more than 5 characters.'
   ], (options) ->
     options.host = "http://#{options.host}" unless /^(http|https):\/\//.test(options.host)
-    unless conf.configs?.length && process.env.HOME
+
+    home = require('os-homedir')()
+    if _.isEmpty(conf.configs) && home
       configContent = JSON.stringify
         host: options.host
         user: options.user
       , null, 2
 
-      defaultConfigPath = path.join(process.env.HOME, '.livingdocs/config')
-      fs.writeFile defaultConfigPath, configContent, (err) ->
-        log.warn(err) if err
-        callback(options)
+      configPath = path.join(home, '.livingdocs')
+      configFilePath = path.join(configPath, 'config')
+      mkdirp configPath, (err) ->
+        return callback(err) if err
+        fs.writeFile configFilePath, configContent, (err) ->
+          log.warn(err) if err
+          callback(options)
 
     else
       callback(options)
