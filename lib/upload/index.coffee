@@ -23,6 +23,9 @@ exports.askOptions = (options, callback) ->
     name: 'host'
     message: 'Host'
     default: conf.host
+    validate: (val) ->
+      return true if val.trim()
+      'A design server is required to publish the design'
   ,
     name: 'user'
     message: 'Email'
@@ -38,6 +41,7 @@ exports.askOptions = (options, callback) ->
       return true if val.trim() && val.length > 5
       'The password must contain more than 5 characters.'
   ], (options) ->
+    options.host = "http://#{options.host}" unless /^(http|https):\/\//.test(options.host)
     unless conf.configs?.length && process.env.HOME
       configContent = JSON.stringify
         host: options.host
@@ -81,15 +85,15 @@ validateDesign = (design) ->
 
 
 # upload to the ☁️
-exports.exec = ({cwd, user, password, host}={}, callback) ->
+exports.exec = (options={}, callback) ->
+  {cwd, user, password, host} = options
+
   try
+    _.each ['cwd', 'user', 'password', 'host'], (prop) ->
+      assert(typeof options[prop] is 'string', "The parameter 'options.#{prop}' is required")
+
     design = JSON.parse(fs.readFileSync(path.join(cwd, 'design.json')))
-    assert(typeof design is 'object', "The parameter 'design' is required.")
-    assert(typeof design.name is 'string', "The design requires a property 'name'.")
-    assert(typeof design.version is 'string', "The design requires a property 'version'.")
-    assert(typeof user is 'string', "The parameter 'user' is required")
-    assert(typeof password is 'string', "The parameter 'password' is required")
-    assert(typeof host is 'string', "The parameter 'host' is required")
+    validateDesign(design)
 
   catch err
     return callback(err)
