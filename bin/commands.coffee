@@ -38,7 +38,8 @@ commands =
         build:      process the design in the current directory
       """
 
-
+  '-v': -> commands.version
+  '--version': -> commands.version
   version:
     description: 'Show the script version'
     exec: (config) ->
