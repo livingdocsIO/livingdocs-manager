@@ -9,6 +9,7 @@ log = require('npmlog')
 utils = require('../utils')
 rc = require('rc')
 _ = require('lodash')
+Glob = require('glob')
 
 
 exports.askOptions = (options, callback) ->
@@ -61,7 +62,9 @@ exports.authenticate = ({host, user, password}, callback) ->
   request
     method: 'post'
     url: host+'/authenticate'
-    body: {username: user, password: password}
+    body:
+      username: user
+      password: password
     json: true
   , (err, res, body) ->
     if err
@@ -75,7 +78,9 @@ exports.authenticate = ({host, user, password}, callback) ->
       error = new Error("Authentication: #{body.error}")
 
     return callback(error) if error
-    callback(null, user: body.user, accessToken: body.access_token)
+    callback null,
+      user: body.user
+      token: body.access_token
 
 
 validateDesign = (design) ->
@@ -98,8 +103,7 @@ exports.exec = (options={}, callback) ->
   catch err
     return callback(err)
 
-  exports.authenticate {host, user, password}
-  , (err, {user, accessToken: token}={}) ->
+  exports.authenticate options, (err, {user, token}={}) ->
     return callback(err) if err
     exports.putJson {design, token, host}, (err, {design, url}={}) ->
       return callback(err) if err
@@ -118,17 +122,16 @@ exports.putJson = ({design, host, token}, callback) ->
     json: true
   , (err, res, body) ->
     return callback(err) if err
-    if res?.statusCode == 200
+    if res.statusCode == 200
       body = {design: design, url: designUrl}
       return callback(null, body)
 
-    error = new Error(body.error || "Unhandled response code #{statusCode}")
+    error = new Error(body.error || "Unhandled response code #{res.statusCode}")
     error.error_details = body.error_details
     callback(error)
 
 
 exports.uploadAssets = ({cwd, design, host, token}, callback) ->
-  Glob = require('glob')
   new Glob '**/*', cwd: cwd, (err, files) ->
     return callback(err) if err
 
