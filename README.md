@@ -1,8 +1,8 @@
-# Livingdocs Design Manager - ldm
+# Livingdocs Manager - ldm
 
 ## Installation
 ```
-npm install -g livingdocs-design-manager
+npm install -g livingdocs-manager
 ```
 
 ## Commands
@@ -25,6 +25,6 @@ where: <command> is one of:
 
 ```
 cd ~/Development/livingdocs-design
-ldm build ./src ./dist
-ldm publish ./dist
+ldm design:build ./src ./dist
+ldm design:publish ./dist
 ```

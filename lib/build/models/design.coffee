@@ -16,33 +16,36 @@ class Design extends EventEmitter
 
 
   initConfig: (@config={}, callback) ->
-    @debug('initialize config file')
+    @debug('Initialize config object')
 
     for prop in ['name', 'version']
-      unless @config[prop]
-        err = new Error("Your configuration does not contain a '#{prop}'.")
-        return callback(err)
+      if !@config[prop]
+        return invalidConfigError(prop, callback)
+
     callback()
 
 
   initConfigFile: (filePath, callback) ->
-    @debug('read config file')
+    @debug('Read config file')
 
     fs.readFile filePath, (err, file) =>
       if err
-        if err.errno == 34 then err = new Error("The design in '#{path.dirname(filePath)}/' has no '#{path.basename(filePath)}' file.")
-        return callback(err)
+        return configReadError(filePath, err, callback)
 
       try
         json = JSON.parse(file)
       catch err
         return callback(err)
 
-      @initConfig(json, callback)
+      @initConfig json, (err) ->
+        if err && err.code == 'InvalidConfig'
+          err.message += "Please edit your configuration in #{filePath}."
+
+        callback(err)
 
 
   addTemplate: (templateName, templateString) ->
-    @debug("add template '#{templateName}'")
+    @debug("Add template '#{templateName}'")
 
     template = Template.parse(templateName, templateString, @options, this)
     @components.push(template)
@@ -50,7 +53,7 @@ class Design extends EventEmitter
 
   addTemplateFile: (filePath, callback) ->
     templateName = utils.filenameToTemplatename(filePath)
-    @debug("read template '#{templateName}'")
+    @debug("Read template '#{templateName}'")
     fs.readFile filePath, (err, templateString) =>
       return callback(err) if err
       @addTemplate(templateName, templateString)
@@ -71,7 +74,7 @@ class Design extends EventEmitter
 
   # write the config and templates to disk
   save: (dest, minify) ->
-    @debug('save design files')
+    @debug('Save design files')
 
     minify = if minify then 0 else 2
     javascript = @toJs(minify)
@@ -79,7 +82,7 @@ class Design extends EventEmitter
     json = @toJson(minify)
     json_dest = dest.replace(/\.js/, '.json')
 
-    @debug("save design.js file to #{javascript_dest}")
+    @debug("Save design.js file to #{javascript_dest}")
     mkdirp path.dirname(javascript_dest), (err) =>
       if err
         @emit('error', err)
@@ -90,11 +93,11 @@ class Design extends EventEmitter
           @emit('error', err)
           return @emit('end')
 
-        @debug('saved design.js file')
-        @debug('save design.json file')
+        @debug('Saved design.js file')
+        @debug('Save design.json file')
         fs.writeFile json_dest, json, (err) =>
           @emit('error', err) if err
-          @debug('saved design.json file') unless err
+          @debug('Saved design.json file') unless err
           @emit('end')
 
 
@@ -107,3 +110,17 @@ class Design extends EventEmitter
 
 
 module.exports = Design
+
+
+configReadError = (filePath, err, callback) ->
+  if err.errno == 34
+    err = new Error("The design in '#{path.dirname(filePath)}/' has no '#{path.basename(filePath)}' file.")
+    err.code == 'MissingConfig'
+
+  callback(err)
+
+
+invalidConfigError = (prop, callback) ->
+  err = new Error("Your configuration does not contain a '#{prop}'.")
+  err.code = 'InvalidConfig'
+  return callback(err)
