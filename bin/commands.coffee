@@ -134,56 +134,72 @@ commands =
       express = require('express')
       request = require('request')
       mime = require('mime')
+      tar = require('tar-stream')
+
       host = args.host || 'http://api.livingdocs.io/designs'
       port = args.port || 3000
 
-      cachePath = path.join(__dirname,'ld-design-cache')
+      cachePath = path.join(process.cwd(),'ld-design-cache')
       try
         fs.mkdirSync(cachePath)
       catch err
         throw err unless err.code == 'EEXIST'
 
-      getFileStream = ({name, version}) ->
+      getDesignStream = ({name, version}) ->
         filePath = path.join(cachePath, "#{name}-#{version}.tar.gz")
         if fs.existsSync(filePath)
           fs.createReadStream(filePath)
         else
           tarUrl = "#{host}/#{name}/#{version}.tar.gz"
           stream = request(tarUrl)
-          stream.pipe(fs.createWriteStream(filePath))
+          write = fs.createWriteStream(filePath)
+          stream.pipe(write)
           stream
 
+      getDesignFileStream = ({name, version, file}, callback) ->
+        extract = tar.extract()
+        extract.on 'entry', (header, stream, done) ->
+          if !_.endsWith(header.name, file)
+            done()
+            stream.resume()
+
+          else
+            contentType = mime.lookup(header.name)
+            callback(null, {contentType, stream})
+
+            destroy = ->
+              stream.destroy()
+              extract.destroy()
+
+            stream.on 'error', destroy
+            stream.on 'end', destroy
+
+        extract.on 'finish', -> callback()
+        getDesignStream({name, version}).pipe(require('gunzip-maybe')()).pipe(extract)
 
       app = express()
       app.get '/designs/:name/:version', (req, res) ->
-
-        tar = require('tar-stream')
-        extract = tar.extract()
-        extract.on 'entry', (header, stream, callback) ->
-          return callback() unless /design\.json$/.test(header.name)
-          res.set('content-type', 'application/json')
+        getDesignFileStream
+          name: req.params.name
+          version: req.params.version
+          file: 'design.json'
+        , (err, {stream, contentType} = {}) ->
+          return res.sendStatus(404) unless stream
+          res.set('content-type', contentType)
           stream.pipe(res)
 
-        extract.on 'finish', -> res.sendStatus(404)
-        getFileStream(req.params).pipe(require('gunzip-maybe')()).pipe(extract)
-
-      app.get '/designs/:name/:version/:asset(*)', (req, res) ->
-
-        tar = require('tar-stream')
-        extract = tar.extract()
-        extract.on 'entry', (header, stream, callback) ->
-          return callback() if header.name.indexOf(req.params.asset) == -1
-          res.set('content-type', mime.lookup(header.name))
+      app.get '/designs/:name/:version/:file(*)', (req, res) ->
+        getDesignFileStream req.params, (err, {stream, contentType} = {}) ->
+          return res.sendStatus(404) unless stream
+          res.set('content-type', contentType)
           stream.pipe(res)
-
-        extract.on 'finish', -> res.sendStatus(404)
-        getFileStream(req.params).pipe(require('gunzip-maybe')()).pipe(extract)
-
 
       server = app.listen port, (err) ->
         if err
-          return log.error('proxy', 'Failed to start server on port %s', port)
-        log.info('proxy', 'Server started on http://localhost:%s', server.address().port)
+          log.error('proxy', 'Failed to start server on port %s', port)
+
+        else
+          log.info('proxy', 'Server started on http://localhost:%s', server.address().port)
 
 
   'project:design:remove': ''
