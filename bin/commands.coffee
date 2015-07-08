@@ -1,6 +1,4 @@
-path = require('path')
 log = require('npmlog')
-assert = require('assert')
 _ = require('lodash')
 pkg = require('../package.json')
 Design = require('../')
@@ -126,85 +124,24 @@ commands =
     exec: (config, callback) ->
       args = minimist process.argv.splice(3),
         string: ['host', 'port']
-        alias:
-          h: 'host'
-          p: 'port'
+        alias: h: 'host', p: 'port'
 
-      fs = require('fs')
-      express = require('express')
-      request = require('request')
-      mime = require('mime')
-      tar = require('tar-stream')
-      gunzip = require('gunzip-maybe')
+      args.host ?= 'http://api.livingdocs.io/designs'
+      args.port ?= 3000
 
-      host = args.host || 'http://api.livingdocs.io/designs'
-      port = args.port || 3000
+      proxy = require('../lib/design/proxy')
+      proxy.start
+        host: args.host
+        port: args.port
+      , (err, {server, port} = {}) ->
+        if err?.code == 'EADDRINUSE'
+          log.error('design:proxy', 'Failed to start the server on port %s', args.port)
 
-      cachePath = path.join(process.cwd(),'ld-design-cache')
-      try
-        fs.mkdirSync(cachePath)
-      catch err
-        throw err unless err.code == 'EEXIST'
-
-      getDesignStream = ({name, version}, callback) ->
-        filePath = path.join(cachePath, "#{name}-#{version}.tar.gz")
-        if fs.existsSync(filePath)
-          callback(null, fs.createReadStream(filePath))
-        else
-          tarUrl = "#{host}/#{name}/#{version}.tar.gz"
-          stream = request(tarUrl)
-          write = fs.createWriteStream(filePath)
-          stream.pipe(write)
-          callback(null, stream)
-
-      getDesignFileStream = ({name, version, file}, callback) ->
-        extract = tar.extract()
-        extract.on 'entry', (header, stream, done) ->
-          if !_.endsWith(header.name, file)
-            stream.resume()
-            done()
-
-          else
-            contentType = mime.lookup(header.name)
-            callback(null, {contentType, stream})
-
-            destroy = ->
-              stream.destroy()
-              extract.destroy()
-
-            stream.on 'error', destroy
-            stream.on 'end', destroy
-
-        extract.on 'finish', -> callback()
-        getDesignStream {name, version}, (err, stream) ->
-          return callback(err) if err || !stream
-          stream.pipe(gunzip()).pipe(extract)
-
-      sendFile = (res) ->
-        (err, {stream, contentType} = {}) ->
-          return res.status(500).send(err) if err
-          return res.sendStatus(404) if !stream
-          res.set('content-type', contentType)
-          stream.pipe(res)
-
-      app = express()
-      app.get '/designs/:name/:version', (req, res) ->
-        getDesignFileStream
-          name: req.params.name
-          version: req.params.version
-          file: 'design.json'
-        , sendFile(res)
-
-      app.get '/designs/:name/:version/:file(*)', (req, res) ->
-        getDesignFileStream req.params, sendFile(res)
-
-
-      server = app.listen port, (err) ->
-        if err
-          log.error('proxy', 'Failed to start server on port %s', port)
+        else if err
+          log.error('design:proxy', err)
 
         else
-          log.info('proxy', 'Server started on http://localhost:%s', server.address().port)
+          log.info('design:proxy', 'Server started on http://localhost:%s', port)
 
 
   'project:design:add':
@@ -240,7 +177,6 @@ commands =
           return log.error(err) if err
           log.info('design:remove', "The design '#{args.name}@#{args.version}' got removed from your project.")
 
-
 getSpace = (callback) ->
   args = spaceDesignConfig()
   api.askAuthenticationOptions args, (options) ->
@@ -256,8 +192,8 @@ getSpace = (callback) ->
       , spaceId, (err, space) ->
         return log.error(err) if err
 
-        return log.error('design.add', 'A design name is required') unless args.name
-        return log.error('design.add', 'A design version is required') unless args.version
+        return log.error('design:add', 'A design name is required') unless args.name
+        return log.error('design:add', 'A design version is required') unless args.version
         callback({args, options, space, user, token})
 
 
