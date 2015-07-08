@@ -36,6 +36,8 @@ commands =
         help                       Show this information
         version                    Show the cli version
 
+        user:info                  Prints the user information
+
         design:publish             Upload the design in the current directory
         design:build               Process the design in the current directory
         design:proxy               Start a design proxy server that caches designs
@@ -53,6 +55,22 @@ commands =
     description: 'Show the script version'
     exec: (config) ->
       console.log(pkg.version)
+
+  'design:publish':
+    description: 'Show the script version'
+    exec: (config) ->
+
+
+  'user:info':
+    description: 'Prints the user info'
+    exec: (config) ->
+      args = spaceDesignConfig()
+      api.askAuthenticationOptions args, (options) ->
+        api.authenticate options, (err, {user, token}={}) ->
+          return log.error(err) if err
+          print = require('../lib/print')
+          print.user(user)
+          print.token(token)
 
 
   'publish': ->
