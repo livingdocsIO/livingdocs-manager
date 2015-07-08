@@ -76,9 +76,14 @@ commands =
         options = _.extend({}, options, cwd: cwd)
         upload = require('../lib/upload')
         upload.exec options, (err, {design, url}={}) ->
-          return log.error('publish', 'No design.json file found in %s', cwd) if err.code == 'ENOENT'
-          return log.error('publish', err.stack) if err
-          log.info('publish', 'Published the design %s@%s to %s', design.name, design.version, url)
+          if err?.code == 'ENOENT'
+            log.error('publish', 'No design.json file found in %s', cwd)
+
+          else if err
+            log.error('publish', err.stack)
+
+          else
+            log.info('publish', 'Published the design %s@%s to %s', design.name, design.version, url)
 
 
   'build': ->
