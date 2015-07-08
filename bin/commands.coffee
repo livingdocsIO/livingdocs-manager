@@ -1,8 +1,11 @@
 path = require('path')
 log = require('npmlog')
+assert = require('assert')
 _ = require('lodash')
 pkg = require('../package.json')
 Design = require('../')
+api = require('../lib/api')
+minimist = require('minimist')
 
 exports.init = (config, callback) ->
   callback()
@@ -41,9 +44,10 @@ commands =
 
         project:design:add         Add a design to a project
         project:design:remove      Remove a design from a project
-        project:design:default     Set a design to a default
-        project:design:deprecate   Prevent document creation with a specific design version
       """
+        # project:design:default     Set a design to a default
+        # project:design:deprecate   Prevent document creation with a specific design version
+
 
   '-v': -> commands.version
   '--version': -> commands.version
@@ -60,7 +64,6 @@ commands =
   'design:publish':
     description: 'Show the script version'
     exec: (config) ->
-      minimist = require('minimist')
       args = minimist process.argv.splice(3),
         string: ['user', 'password', 'host', 'source']
         alias:
@@ -71,7 +74,6 @@ commands =
           src: 'source'
 
       cwd = args.source || args._[0] || process.cwd()
-      api = require('../lib/api')
       api.askAuthenticationOptions args, (options) ->
         options = _.extend({}, options, cwd: cwd)
         upload = require('../lib/upload')
@@ -88,7 +90,6 @@ commands =
   'design:build':
     description: 'Compile the design'
     exec: (config, callback) ->
-      minimist = require('minimist')
       argv = process.argv.splice(3)
       args = minimist argv,
         string: ['source', 'destination']
@@ -123,7 +124,6 @@ commands =
   'design:proxy':
     description: 'Start a design server that caches designs'
     exec: (config, callback) ->
-      minimist = require('minimist')
       args = minimist process.argv.splice(3),
         string: ['host', 'port']
         alias:
@@ -207,19 +207,68 @@ commands =
           log.info('proxy', 'Server started on http://localhost:%s', server.address().port)
 
 
-  'project:design:remove': ''
   'project:design:add':
     description: 'Add a design to a project'
     exec: (config, callback) ->
-      minimist = require('minimist')
-      args = minimist process.argv.splice(3),
-        string: ['user', 'password', 'host']
-        alias:
-          h: 'host'
-          u: 'user'
-          p: 'password'
+      getSpace ({args, options, space, user, token}) ->
+        api.space.addDesign
+          host: options.host
+          token: token
+        ,
+          space: space
+          design:
+            name: args.name
+            version: args.version
+        , (err, space) ->
+          return log.error(err) if err
+          log.info('design:add', "The design '#{args.name}@#{args.version}' is now linked to your project.")
 
-      cwd = args.source || args._[0] || process.cwd()
-      api = require('../lib/api')
-      api.askAuthenticationOptions args, (options) ->
-        console.log(options)
+
+  'project:design:remove':
+    description: 'Remove a design from a project'
+    exec: (config, callback) ->
+      getSpace ({args, options, space, user, token}) ->
+        api.space.removeDesign
+          host: options.host
+          token: token
+        ,
+          space: space
+          design:
+            name: args.name
+            version: args.version
+        , (err, space) ->
+          return log.error(err) if err
+          log.info('design:remove', "The design '#{args.name}@#{args.version}' got removed from your project.")
+
+
+getSpace = (callback) ->
+  args = spaceDesignConfig()
+  api.askAuthenticationOptions args, (options) ->
+    api.authenticate options, (err, {user, token}={}) ->
+      return log.error(err) if err
+
+      spaceId = args.space || user.space_id
+      log.info('design:add', "Adding the design to the space ##{spaceId}")
+
+      api.space.get
+        host: options.host
+        token: token
+      , spaceId, (err, space) ->
+        return log.error(err) if err
+
+        return log.error('design.add', 'A design name is required') unless args.name
+        return log.error('design.add', 'A design version is required') unless args.version
+        callback({args, options, space, user, token})
+
+
+spaceDesignConfig = ->
+  minimist process.argv.splice(3),
+    string: ['user', 'password', 'host', 'space', 'name', 'version']
+    alias:
+      h: 'host'
+      u: 'user'
+      p: 'password'
+      s: 'space'
+      project: 'space'
+      n: 'name'
+      v: 'version'
