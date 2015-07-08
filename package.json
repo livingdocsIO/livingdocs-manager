@@ -3,7 +3,7 @@
   "version": "2.0.1",
   "main": "index.js",
   "bin": {
-    "livingdocs-design-manager": "./bin/index.js",
+    "livingdocs-manager": "./bin/index.js",
     "ldm": "./bin/index.js"
   },
   "author": "Marc Bachmann <marc@upfront.io>",
