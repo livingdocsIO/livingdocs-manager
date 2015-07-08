@@ -7,6 +7,7 @@ request = require('request')
 mime = require('mime')
 tar = require('tar-stream')
 gunzip = require('gunzip-maybe')
+log = require('npmlog')
 
 
 exports.start = (config, callback) ->
@@ -15,41 +16,40 @@ exports.start = (config, callback) ->
   basePath = "http://localhost:#{config.port}/designs"
 
   cachePath = path.join(process.cwd(),'ld-design-cache')
-  try
-    fs.mkdirSync(cachePath)
-  catch err
-    throw err unless err.code == 'EEXIST'
+  fs.mkdir cachePath, (err) ->
+    return callback(err) if err && err.code != 'EEXIST'
 
-  app = express()
-  app.get '/designs/:name/:version', (req, res) ->
-    name = req.params.name
-    version = req.params.version
-    getDesignFileStream
-      name: name
-      version: version
-      host: config.host
-      file: 'design.json'
-      cachePath: cachePath
-    , (err, {stream, contentType} = {}) ->
-      return sendFile(res)(err) if err || !stream
-      stream = stream.pipe(designJSONTransform({name, version, basePath}))
-      sendFile(res)(null, {stream, contentType})
+    app = express()
+    app.get '/designs/:name/:version', (req, res) ->
+      name = req.params.name
+      version = req.params.version
+      getDesignFileStream
+        host: config.host
+        name: name
+        version: version
+        file: 'design.json'
+        cachePath: cachePath
+      , (err, {stream, contentType} = {}) ->
+        return sendFile(res)(err) if err || !stream
+        stream = stream.pipe(designJSONTransform({name, version, basePath}))
+        sendFile(res)(null, {stream, contentType})
 
-  app.get '/designs/:name/:version/:file(*)', (req, res) ->
-    getDesignFileStream
-      name: req.params.name
-      version: req.params.version
-      host: config.host
-      file: req.params.file
-      cachePath: cachePath
-    , sendFile(res)
+    app.get '/designs/:name/:version/:file(*)', (req, res) ->
+      getDesignFileStream
+        host: config.host
+        name: req.params.name
+        version: req.params.version
+        file: req.params.file
+        cachePath: cachePath
+      , sendFile(res)
 
-  server = app.listen config.port, (err) ->
-    if err
-      callback(err, server: server)
+    server = app.listen config.port, (err) ->
+      if err
+        callback(err, server: server)
 
-    else
-      callback(null, server: server, port: server.address().port)
+      else
+        port = server.address().port
+        callback(null, server: server, port: port)
 
 
 sendFile = (res) ->
