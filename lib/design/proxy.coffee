@@ -15,7 +15,7 @@ exports.start = (config, callback) ->
   assert(config.port, 'proxy.start(config, callback) requires a config.port param.')
   basePath = undefined
 
-  cachePath = path.join(process.cwd(),'ld-design-cache')
+  cachePath = path.join(process.cwd(),'ldm-design-proxy-cache')
   fs.mkdir cachePath, (err) ->
     return callback(err) if err && err.code != 'EEXIST'
 
