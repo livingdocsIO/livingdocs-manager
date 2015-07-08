@@ -102,6 +102,7 @@ getDesignStream = ({name, version, host, cachePath}, callback) ->
 
 
 getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
+  callback = _.once(callback)
   extract = tar.extract()
   extract.on 'entry', (header, stream, done) ->
     if header.name != "undefined/#{file}"
