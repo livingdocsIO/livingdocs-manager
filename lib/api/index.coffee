@@ -107,13 +107,15 @@ exports.space =
       url: options.host+"/designs/#{design.name}/#{design.version}"
       is_selectable: true
 
-    contained = _.find(space.config.designs, _.pick(design, 'name', 'version'))
-    if contained
-      log.info('space:addDesign', 'The space already contains such a design')
+    identifiers = _.pick(design, 'name', 'version')
+    contained = _.find(space.config.designs, identifiers)
+    isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), identifiers)
+    if isDefault && contained
+      log.info('space:addDesign', 'This design is already set as default')
       return callback(null, space)
 
     space.config.designs ?= []
-    space.config.designs.push(design)
+    space.config.designs.push(design) if !contained
     space.config.default_design = design
     updateConfig(options, space, callback)
 
