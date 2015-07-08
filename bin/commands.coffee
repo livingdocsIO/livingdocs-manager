@@ -135,6 +135,7 @@ commands =
       request = require('request')
       mime = require('mime')
       tar = require('tar-stream')
+      gunzip = require('gunzip-maybe')
 
       host = args.host || 'http://api.livingdocs.io/designs'
       port = args.port || 3000
@@ -145,23 +146,23 @@ commands =
       catch err
         throw err unless err.code == 'EEXIST'
 
-      getDesignStream = ({name, version}) ->
+      getDesignStream = ({name, version}, callback) ->
         filePath = path.join(cachePath, "#{name}-#{version}.tar.gz")
         if fs.existsSync(filePath)
-          fs.createReadStream(filePath)
+          callback(null, fs.createReadStream(filePath))
         else
           tarUrl = "#{host}/#{name}/#{version}.tar.gz"
           stream = request(tarUrl)
           write = fs.createWriteStream(filePath)
           stream.pipe(write)
-          stream
+          callback(null, stream)
 
       getDesignFileStream = ({name, version, file}, callback) ->
         extract = tar.extract()
         extract.on 'entry', (header, stream, done) ->
           if !_.endsWith(header.name, file)
-            done()
             stream.resume()
+            done()
 
           else
             contentType = mime.lookup(header.name)
@@ -175,7 +176,16 @@ commands =
             stream.on 'end', destroy
 
         extract.on 'finish', -> callback()
-        getDesignStream({name, version}).pipe(require('gunzip-maybe')()).pipe(extract)
+        getDesignStream {name, version}, (err, stream) ->
+          return callback(err) if err || !stream
+          stream.pipe(gunzip()).pipe(extract)
+
+      sendFile = (res) ->
+        (err, {stream, contentType} = {}) ->
+          return res.status(500).send(err) if err
+          return res.sendStatus(404) if !stream
+          res.set('content-type', contentType)
+          stream.pipe(res)
 
       app = express()
       app.get '/designs/:name/:version', (req, res) ->
@@ -183,16 +193,11 @@ commands =
           name: req.params.name
           version: req.params.version
           file: 'design.json'
-        , (err, {stream, contentType} = {}) ->
-          return res.sendStatus(404) unless stream
-          res.set('content-type', contentType)
-          stream.pipe(res)
+        , sendFile(res)
 
       app.get '/designs/:name/:version/:file(*)', (req, res) ->
-        getDesignFileStream req.params, (err, {stream, contentType} = {}) ->
-          return res.sendStatus(404) unless stream
-          res.set('content-type', contentType)
-          stream.pipe(res)
+        getDesignFileStream req.params, sendFile(res)
+
 
       server = app.listen port, (err) ->
         if err
