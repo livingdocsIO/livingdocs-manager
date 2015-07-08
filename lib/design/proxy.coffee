@@ -84,12 +84,21 @@ getDesignStream = ({name, version, host, cachePath}, callback) ->
   filePath = path.join(cachePath, "#{name}-#{version}.tar.gz")
   if fs.existsSync(filePath)
     callback(null, fs.createReadStream(filePath))
+
   else
     tarUrl = "#{host}/#{name}/#{version}.tar.gz"
-    stream = request(tarUrl)
-    write = fs.createWriteStream(filePath)
-    stream.pipe(write)
-    callback(null, stream)
+    request.get(tarUrl).on 'response', (res) ->
+      if res.statusCode != 200
+        log.info('design:proxy', "Failed to fetch '#{tarUrl}'. Received statusCode #{res.statusCode}")
+        callback()
+
+      else
+        tmpFile = filePath+'.tmp'
+        write = fs.createWriteStream(tmpFile)
+        write.on 'finish', -> fs.rename(tmpFile, filePath)
+        write.on 'error', -> fs.unlink(tmpFile)
+        res.pipe(write)
+        callback(null, res)
 
 
 getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
