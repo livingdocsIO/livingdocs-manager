@@ -70,6 +70,7 @@ designJSONTransform = ({name, version, basePath}) ->
     buffer = Buffer.concat(chunks)
     try
      object = JSON.parse(buffer.toString())
+     object.assets ?= {}
      object.assets.basePath = "#{basePath}/#{name}/#{version}"
      json = JSON.stringify(object)
     catch err
