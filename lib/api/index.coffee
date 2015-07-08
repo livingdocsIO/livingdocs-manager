@@ -1,10 +1,10 @@
-log = require('npmlog')
+path = require('path')
 assert = require('assert')
+log = require('npmlog')
 _ = require('lodash')
 request = require('request')
 rc = require('rc')
 mkdirp = require('mkdirp')
-
 
 exports.authenticate = (options, callback) ->
   _.each ['user', 'password', 'host'], (prop) ->

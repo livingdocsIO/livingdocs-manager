@@ -1,6 +1,7 @@
 # Livingdocs Manager - ldm
 
 ## Installation
+
 ```
 npm install -g livingdocs-manager
 ```
