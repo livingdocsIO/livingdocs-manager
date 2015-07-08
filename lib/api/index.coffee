@@ -1,4 +1,5 @@
 path = require('path')
+fs = require('fs')
 assert = require('assert')
 log = require('npmlog')
 _ = require('lodash')
