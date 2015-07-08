@@ -89,7 +89,12 @@ getDesignStream = ({name, version, host, cachePath}, callback) ->
 
   else
     tarUrl = "#{host}/#{name}/#{version}.tar.gz"
-    request.get(tarUrl).on 'response', (res) ->
+    request.get(tarUrl)
+    .on 'error', (err) ->
+      log.error('design:proxy', err)
+      callback(err)
+
+    .on 'response', (res) ->
       if res.statusCode != 200
         log.info('design:proxy', "Failed to fetch '#{tarUrl}'. Received statusCode #{res.statusCode}")
         callback()
