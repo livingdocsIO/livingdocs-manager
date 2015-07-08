@@ -38,7 +38,7 @@ commands =
 
         design:publish             Upload the design in the current directory
         design:build               Process the design in the current directory
-        design:proxy               Start a proxy server
+        design:proxy               Start a design proxy server that caches designs
 
         project:design:add         Add a design to a project
         project:design:remove      Remove a design from a project

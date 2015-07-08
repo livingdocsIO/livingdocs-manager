@@ -1,5 +1,5 @@
 {
-  "name": "livingdocs-design-manager",
+  "name": "livingdocs-manager",
   "version": "1.3.3",
   "main": "index.js",
   "bin": {
@@ -30,10 +30,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/upfrontIO/livingdocs-design-manager.git"
+    "url": "https://github.com/upfrontIO/livingdocs-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/upfrontIO/livingdocs-design-manager/issues"
+    "url": "https://github.com/upfrontIO/livingdocs-manager/issues"
   },
-  "homepage": "https://github.com/upfrontIO/livingdocs-design-manager"
+  "homepage": "https://github.com/upfrontIO/livingdocs-manager"
 }
