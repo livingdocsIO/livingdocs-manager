@@ -13,7 +13,7 @@ log = require('npmlog')
 exports.start = (config, callback) ->
   assert(config.host, 'proxy.start(config, callback) requires a config.host param.')
   assert(config.port, 'proxy.start(config, callback) requires a config.port param.')
-  basePath = "http://localhost:#{config.port}/designs"
+  basePath = undefined
 
   cachePath = path.join(process.cwd(),'ld-design-cache')
   fs.mkdir cachePath, (err) ->
@@ -49,6 +49,7 @@ exports.start = (config, callback) ->
 
       else
         port = server.address().port
+        basePath = "http://localhost:#{port}/designs"
         callback(null, server: server, port: port)
 
 
