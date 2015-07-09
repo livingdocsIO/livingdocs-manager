@@ -7,6 +7,7 @@ request = require('request')
 rc = require('rc')
 mkdirp = require('mkdirp')
 
+api = exports
 exports.authenticate = (options, callback) ->
   _.each ['user', 'password', 'host'], (prop) ->
     assert(typeof options[prop] is 'string', "The parameter 'options.#{prop}' is required")
@@ -100,41 +101,55 @@ exports.space =
       callback(null, body.space)
 
 
-  addDesign: (options, {space, design} = {}, callback) ->
+  listDesigns: (options, spaceId, callback) ->
+    @get options, spaceId, (err, space) ->
+      return callback(err) if err
+      callback null,
+        defaultDesign: space.config.default_design
+        designs: space.config.designs
+
+
+  addDesign: (options, {spaceId, design} = {}, callback) ->
     assertDesign(design)
-    design =
-      name: design.name
-      version: design.version
-      url: options.host+"/designs/#{design.name}/#{design.version}"
-      is_selectable: true
+    api.space.get options, spaceId, (err, space) ->
+      return callback(err) if err || !space
 
-    identifiers = _.pick(design, 'name', 'version')
-    contained = _.find(space.config.designs, identifiers)
-    isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), identifiers)
-    if isDefault && contained
-      log.info('space:addDesign', 'This design is already set as default')
-      return callback(null, space)
+      design =
+        name: design.name
+        version: design.version
+        url: options.host+"/designs/#{design.name}/#{design.version}"
+        is_selectable: true
 
-    space.config.designs ?= []
-    space.config.designs.push(design) if !contained
-    space.config.default_design = design
-    updateConfig(options, space, callback)
+      identifiers = _.pick(design, 'name', 'version')
+      contained = _.find(space.config.designs, identifiers)
+      isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), identifiers)
+      if isDefault && contained
+        log.info('space:addDesign', 'This design is already set as default')
+        return callback(null, space)
+
+      space.config.designs ?= []
+      space.config.designs.push(design) if !contained
+      space.config.default_design = design
+      updateConfig(options, space, callback)
 
 
-  removeDesign: (options, {space, design} = {}, callback) ->
+  removeDesign: (options, {spaceId, design} = {}, callback) ->
     assertDesign(design)
-    space.config.designs ?= []
-    contained = _.find(space.config.designs, design)
-    isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), _.pick(design, 'name', 'version'))
-    if isDefault
-      return callback(new Error("Can't remove a default design. Please add a new one first."))
+    api.space.get options, spaceId, (err, space) ->
+      return callback(err) if err || !space
 
-    if !contained
-      log.info('space:removeDesign', "The space doesn't contain such a design")
-      return callback(null, space)
+      space.config.designs ?= []
+      contained = _.find(space.config.designs, design)
+      isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), _.pick(design, 'name', 'version'))
+      if isDefault
+        return callback(new Error("Can't remove a default design. Please add a new one first."))
 
-    space.config.designs = _.reject(space.config.designs, design)
-    updateConfig(options, space, callback)
+      if !contained
+        log.info('space:removeDesign', "The space doesn't contain such a design")
+        return callback(null, space)
+
+      space.config.designs = _.reject(space.config.designs, design)
+      updateConfig(options, space, callback)
 
 
 assertDesign = (design) ->

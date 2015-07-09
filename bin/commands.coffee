@@ -4,6 +4,7 @@ pkg = require('../package.json')
 Design = require('../')
 api = require('../lib/api')
 minimist = require('minimist')
+print = require('../lib/print')
 
 exports.init = (config, callback) ->
   callback()
@@ -42,11 +43,13 @@ commands =
         design:build               Process the design in the current directory
         design:proxy               Start a design proxy server that caches designs
 
+        project:design:list        List all designs of a project
         project:design:add         Add a design to a project
         project:design:remove      Remove a design from a project
       """
-        # project:design:default     Set a design to a default
-        # project:design:deprecate   Prevent document creation with a specific design version
+
+      # project:design:default     Set a design to a default
+      # project:design:deprecate   Prevent document creation with a specific design version
 
 
   '-v': -> commands.version
@@ -68,9 +71,8 @@ commands =
       api.askAuthenticationOptions args, (options) ->
         api.authenticate options, (err, {user, token}={}) ->
           return log.error(err) if err
-          print = require('../lib/print')
-          print.user(user)
-          print.token(token)
+          print.topic('User').user(user)()
+          print.topic('Access token').line(token)()
 
 
   'publish': ->
@@ -167,38 +169,65 @@ commands =
           log.info('design:proxy', 'Server started on http://localhost:%s', port)
 
 
+  'project:design:list':
+    description: 'List all designs of a project'
+    exec: (config, callback) ->
+      authenticateSpace ({options, user, token}) ->
+        api.space.listDesigns
+          host: options.host
+          token: token
+        ,
+          options.space
+        , (err, {defaultDesign, designs} = {}) ->
+          return log.error('design:list', err) if err
+          print.topic('Default design').design(defaultDesign)()
+
+          print.topic('Designs').each(designs, print.design)()
+
+
   'project:design:add':
     description: 'Add a design to a project'
     exec: (config, callback) ->
-      getSpace ({args, options, space, user, token}) ->
+      authenticateSpace ({options, user, token}) ->
         api.space.addDesign
           host: options.host
           token: token
         ,
-          space: space
+          spaceId: options.space
           design:
-            name: args.name
-            version: args.version
+            name: options.name
+            version: options.version
         , (err, space) ->
-          return log.error(err) if err
-          log.info('design:add', "The design '#{args.name}@#{args.version}' is now linked to your project.")
+          return log.error('design:add', err) if err
+          log.info('design:add', "The design '#{options.name}@#{options.version}' is now linked to your project.")
 
 
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: (config, callback) ->
-      getSpace ({args, options, space, user, token}) ->
+      authenticateSpace ({options, user, token}) ->
         api.space.removeDesign
           host: options.host
           token: token
         ,
-          space: space
+          spaceId: options.space
           design:
-            name: args.name
-            version: args.version
+            name: options.name
+            version: options.version
         , (err, space) ->
-          return log.error(err) if err
-          log.info('design:remove', "The design '#{args.name}@#{args.version}' got removed from your project.")
+          return log.error('design:remove', err) if err
+          log.info('design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
+
+
+authenticateSpace = (callback) ->
+  args = spaceDesignConfig()
+  api.askAuthenticationOptions args, (options) ->
+    api.authenticate options, (err, {user, token}={}) ->
+      return callback(err) if err
+      options = _.extend({}, args, options)
+      options.space ?= user.space_id
+      callback({options, user, token})
+
 
 getSpace = (callback) ->
   args = spaceDesignConfig()
