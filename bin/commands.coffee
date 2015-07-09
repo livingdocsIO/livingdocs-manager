@@ -27,45 +27,31 @@ commands =
   '-h': -> commands.help
   '--help': -> commands.help
   help:
-    description: 'Show all commands'
+    description: 'Show this information'
     exec: ->
-      console.log """
-      Usage: ldm <command>
+      print
+        .line('Usage', 'ldm <command>')()
+        .line('where','<command> is one of:')
 
-      where: <command> is one of:
-
-        help                       Show this information
-        version                    Show the cli version
-
-        user:info                  Prints the user information
-
-        design:publish             Upload the design in the current directory
-        design:build               Process the design in the current directory
-        design:proxy               Start a design proxy server that caches designs
-
-        project:design:list        List all designs of a project
-        project:design:add         Add a design to a project
-        project:design:remove      Remove a design from a project
-      """
-
-      # project:design:default     Set a design to a default
-      # project:design:deprecate   Prevent document creation with a specific design version
+      previousTopic = undefined
+      _.each commands, (command, key) ->
+        return unless command?.description
+        topic = key.split(':')?[0]
+        print.line() if topic != previousTopic
+        print.line("  #{_.padRight(key, 30)}#  #{command.description}")
+        previousTopic = topic
 
 
   '-v': -> commands.version
   '--version': -> commands.version
   version:
-    description: 'Show the script version'
+    description: 'Show the cli version'
     exec: (config) ->
       console.log(pkg.version)
 
-  'design:publish':
-    description: 'Show the script version'
-    exec: (config) ->
-
 
   'user:info':
-    description: 'Prints the user info'
+    description: 'Prints the user information'
     exec: (config) ->
       args = spaceDesignConfig()
       api.askAuthenticationOptions args, (options) ->
@@ -75,40 +61,10 @@ commands =
           print.topic('Access token').line(token)()
 
 
-  'publish': ->
-    log.warn('`ldm publish` is obsolete. Please use `ldm design:publish`.')
-    commands['design:publish']
-
-  'design:publish':
-    description: 'Show the script version'
-    exec: (config) ->
-      args = minimist process.argv.splice(3),
-        string: ['user', 'password', 'host', 'source']
-        alias:
-          h: 'host'
-          u: 'user'
-          p: 'password'
-          s: 'source'
-          src: 'source'
-
-      cwd = args.source || args._[0] || process.cwd()
-      api.askAuthenticationOptions args, (options) ->
-        options = _.extend({}, options, cwd: cwd)
-        upload = require('../lib/upload')
-        upload.exec options, (err, {design, url}={}) ->
-          if err?.code == 'ENOENT'
-            log.error('publish', 'No design.json file found in %s', cwd)
-
-          else if err
-            log.error('publish', err.stack)
-
-          else
-            log.info('publish', 'Published the design %s@%s to %s', design.name, design.version, url)
-
-
   'build': ->
     log.warn('`ldm publish` is obsolete. Please use `ldm design:build`.')
     commands['design:build']
+
 
   'design:build':
     description: 'Compile the design'
@@ -144,6 +100,39 @@ commands =
 
         callback?(error)
 
+
+  'publish': ->
+    log.warn('`ldm publish` is obsolete. Please use `ldm design:publish`.')
+    commands['design:publish']
+
+
+  'design:publish':
+    description: 'Show the script version'
+    exec: (config) ->
+      args = minimist process.argv.splice(3),
+        string: ['user', 'password', 'host', 'source']
+        alias:
+          h: 'host'
+          u: 'user'
+          p: 'password'
+          s: 'source'
+          src: 'source'
+
+      cwd = args.source || args._[0] || process.cwd()
+      api.askAuthenticationOptions args, (options) ->
+        options = _.extend({}, options, cwd: cwd)
+        upload = require('../lib/upload')
+        upload.exec options, (err, {design, url}={}) ->
+          if err?.code == 'ENOENT'
+            log.error('publish', 'No design.json file found in %s', cwd)
+
+          else if err
+            log.error('publish', err.stack)
+
+          else
+            log.info('publish', 'Published the design %s@%s to %s', design.name, design.version, url)
+
+
   'design:proxy':
     description: 'Start a design server that caches designs'
     exec: (config, callback) ->
@@ -168,6 +157,10 @@ commands =
         else
           log.info('design:proxy', 'Server started on http://localhost:%s', port)
 
+
+  ## feature requests:
+  # project:design:default     Set a design to a default
+  # project:design:deprecate   Prevent document creation with a specific design version
 
   'project:design:list':
     description: 'List all designs of a project'
