@@ -20,20 +20,23 @@ exports.authenticate = (options, callback) ->
       password: options.password
     json: true
   , (err, res, body) ->
-    if err
+    if res?.statusCode == 401
+      error = new Error('Authentication: Credentials invalid')
+      callback(error)
+
+    else if err
       error = new Error("Authentication: #{err.message}")
       error.stack = err.stack
+      callback(error)
 
-    if res.statusCode == 401
-      error = new Error('Authentication: Credentials invalid')
-
-    if res.statusCode != 200
+    else if res?.statusCode != 200
       error = new Error("Authentication: #{body.error}")
+      callback(error)
 
-    return callback(error) if error
-    callback null,
-      user: body.user
-      token: body.access_token
+    else
+      callback null,
+        user: body.user
+        token: body.access_token
 
 
 exports.askAuthenticationOptions = (options, callback) ->

@@ -69,7 +69,7 @@ commands =
     exec: (config) ->
       args = spaceDesignConfig()
       api.askAuthenticationOptions args, (options) ->
-        api.authenticate options, (err, {user, token}={}) ->
+        api.authenticate options, (err, {user, token} = {}) ->
           return log.error(err) if err
           print.topic('User').user(user)()
           print.topic('Access token').line(token)()
@@ -172,7 +172,8 @@ commands =
   'project:design:list':
     description: 'List all designs of a project'
     exec: (config, callback) ->
-      authenticateSpace ({options, user, token}) ->
+      authenticateSpace (err, {options, user, token} = {}) ->
+        return log.error(err) if err
         api.space.listDesigns
           host: options.host
           token: token
@@ -188,7 +189,8 @@ commands =
   'project:design:add':
     description: 'Add a design to a project'
     exec: (config, callback) ->
-      authenticateSpace ({options, user, token}) ->
+      authenticateSpace (err, {options, user, token} = {}) ->
+        return log.error(err) if err
         api.space.addDesign
           host: options.host
           token: token
@@ -205,7 +207,8 @@ commands =
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: (config, callback) ->
-      authenticateSpace ({options, user, token}) ->
+      authenticateSpace (err, {options, user, token} = {}) ->
+        return log.error(err) if err
         api.space.removeDesign
           host: options.host
           token: token
@@ -222,17 +225,17 @@ commands =
 authenticateSpace = (callback) ->
   args = spaceDesignConfig()
   api.askAuthenticationOptions args, (options) ->
-    api.authenticate options, (err, {user, token}={}) ->
+    api.authenticate options, (err, {user, token} = {}) ->
       return callback(err) if err
       options = _.extend({}, args, options)
       options.space ?= user.space_id
-      callback({options, user, token})
+      callback(null, {options, user, token})
 
 
 getSpace = (callback) ->
   args = spaceDesignConfig()
   api.askAuthenticationOptions args, (options) ->
-    api.authenticate options, (err, {user, token}={}) ->
+    api.authenticate options, (err, {user, token} = {}) ->
       return log.error(err) if err
 
       spaceId = args.space || user.space_id
