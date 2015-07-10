@@ -39,49 +39,44 @@ exports.authenticate = (options, callback) ->
         token: body.access_token
 
 
-exports.askAuthenticationOptions = (options, callback) ->
-  if options.host && options.user && options.password
-    return callback(options)
+exports.askAuthenticationOptions = (args, callback) ->
+  if args.host && args.user && args.password
+    return callback(args)
 
-  conf = rc 'livingdocs',
-    host: 'http://api.livingdocs.io'
-    user: "#{process.env.USER}@upfront.io"
 
   inquirer = require('inquirer')
   inquirer.prompt [
     name: 'host'
     message: 'Host'
-    default: conf.host
+    default: args.host
     validate: (val) ->
       return true if val.trim()
       'A design server is required to publish the design'
   ,
     name: 'user'
     message: 'Email'
-    default: conf.user
+    default: args.user
     validate: (val) -> /.*@.*/.test(val)
   ,
     name: 'password'
     message: 'Password'
     type: 'password'
     filter: (val) -> return val if !!val
-    default: options.password
+    default: args.password
     validate: (val) ->
       return true if val.trim() && val.length > 5
       'The password must contain more than 5 characters.'
   ], (options) ->
+    options = _.extend({}, args, options)
     options.host = "http://#{options.host}" unless /^(http|https):\/\//.test(options.host)
-
-    home = require('os-homedir')()
-    if _.isEmpty(conf.configs) && home
+    if _.isEmpty(options.configs)
       configContent = JSON.stringify
         host: options.host
         user: options.user
       , null, 2
 
-      configPath = path.join(home, '.livingdocs')
-      configFilePath = path.join(configPath, 'config')
-      mkdirp configPath, (err) ->
+      configFilePath = path.join(options.dir, 'config')
+      mkdirp path.dirname(configFilePath), (err) ->
         return callback(err) if err
         fs.writeFile configFilePath, configContent, (err) ->
           log.warn(err) if err

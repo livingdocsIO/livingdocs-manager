@@ -6,7 +6,7 @@
   process.title = 'livingdocs';
 
   var action = process.argv.slice(2, 3)[0];
-  var conf = require('minimist')(process.argv.slice(3), {
+  var args = require('minimist')(process.argv.slice(3), {
     alias: {
       v: 'verbose',
       verbose: 'verbose'
@@ -14,12 +14,12 @@
   })
 
   log.level = 'info';
-  if (conf.verbose) log.level = 'verbose';
+  if (args.verbose) log.level = 'verbose';
 
   log.verbose('using', 'node@%s', process.version)
   log.verbose('cli', process.argv)
   log.verbose('cli', 'action', action)
-  log.verbose('cli', 'options', conf)
+  log.verbose('cli', 'options', args)
 
 
   // Error handlers
@@ -61,8 +61,8 @@
 
   // Initialize commands
   var commands = require('./commands');
-  commands.init(conf, function (err) {
+  commands.init(function (err) {
     if (err) return log.error('cli', err);
-    commands.trigger(action, conf);
+    commands.trigger(action);
   });
 })()

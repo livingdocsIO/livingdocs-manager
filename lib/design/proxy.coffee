@@ -10,14 +10,12 @@ gunzip = require('gunzip-maybe')
 log = require('npmlog')
 eos = require('end-of-stream')
 
-
-exports.start = (config, callback) ->
-  assert(config.host, 'proxy.start(config, callback) requires a config.host param.')
-  assert(config.port, 'proxy.start(config, callback) requires a config.port param.')
+exports.start = (options, callback) ->
+  assert(options.host, 'proxy.start(options, callback) requires a options.host param.')
+  assert(options.port, 'proxy.start(options, callback) requires a options.port param.')
   basePath = undefined
 
-  cachePath = path.join(process.cwd(),'ldm-design-proxy-cache')
-  fs.mkdir cachePath, (err) ->
+  fs.mkdir options.cacheDirectory, (err) ->
     return callback(err) if err && err.code != 'EEXIST'
 
     app = express()
@@ -42,11 +40,11 @@ exports.start = (config, callback) ->
       name = req.params.name
       version = req.params.version
       getDesignFileStream
-        host: config.host
+        host: options.host
         name: name
         version: version
         file: 'design.json'
-        cachePath: cachePath
+        cacheDirectory: options.cacheDirectory
       , (err, {stream, contentType} = {}) ->
         return sendFile(res)(err) if err || !stream
         stream = stream.pipe(new DesignTransform({name, version, basePath}))
@@ -54,14 +52,14 @@ exports.start = (config, callback) ->
 
     app.get '/designs/:name/:version/:file(*)', (req, res) ->
       getDesignFileStream
-        host: config.host
+        host: options.host
         name: req.params.name
         version: req.params.version
         file: req.params.file
-        cachePath: cachePath
+        cacheDirectory: cacheDirectory
       , sendFile(res)
 
-    server = app.listen config.port, (err) ->
+    server = app.listen options.port, (err) ->
       if err
         callback(err, server: server)
 
@@ -82,7 +80,7 @@ sendFile = (res) ->
 
 
 getDesignStream = (options, callback) ->
-  filePath = path.join(options.cachePath, "#{options.name}-#{options.version}.tar.gz")
+  filePath = path.join(options.cacheDirectory, "#{options.name}-#{options.version}.tar.gz")
   tmpFilePath = filePath+'.tmp'
 
   fs.exists filePath, (exists) ->
@@ -120,7 +118,7 @@ getDesignStream = (options, callback) ->
         res.pipe(write)
 
 
-getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
+getDesignFileStream = ({name, version, host, file, cacheDirectory}, callback) ->
   callback = _.once(callback)
   extract = tar.extract()
   extract.on 'entry', (header, stream, done) ->
@@ -140,7 +138,7 @@ getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
       stream.on 'end', destroy
 
   extract.on 'finish', -> callback()
-  getDesignStream {name, version, host, cachePath}, (err, stream) ->
+  getDesignStream {name, version, host, cacheDirectory}, (err, stream) ->
     return callback(err) if err || !stream
     stream.pipe(gunzip()).pipe(extract)
 
@@ -159,7 +157,7 @@ class DesignTransform extends require('stream').Transform
      object.assets.basePath = "#{@basePath}/#{@name}/#{@version}"
      json = JSON.stringify(object)
     catch err
-      return @emit('error', err)
+      return done(err)
 
     done(null, json)
 

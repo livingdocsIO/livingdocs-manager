@@ -1,25 +1,27 @@
 log = require('npmlog')
+path = require('path')
 _ = require('lodash')
 pkg = require('../package.json')
 Design = require('../')
 api = require('../lib/api')
 minimist = require('minimist')
 print = require('../lib/print')
+config = require('./config')
 
-exports.init = (config, callback) ->
+exports.init = (callback) ->
   callback()
 
 
-exports.trigger = (command='help', config) ->
+exports.trigger = (command='help') ->
   action = commands[command]
   action = action() if _.isFunction(action)
   if action
-    action.exec?(config)
+    action.exec?()
 
   else
     log.error('cli', "The command '#{command}' isn't available")
     console.log('')
-    commands.help.exec(config)
+    commands.help.exec()
 
 
 commands =
@@ -46,13 +48,13 @@ commands =
   '--version': -> commands.version
   version:
     description: 'Show the cli version'
-    exec: (config) ->
+    exec: ->
       console.log(pkg.version)
 
 
   'user:info':
     description: 'Prints the user information'
-    exec: (config) ->
+    exec: ->
       args = spaceDesignConfig()
       api.askAuthenticationOptions args, (options) ->
         api.authenticate options, (err, {user, token} = {}) ->
@@ -68,7 +70,7 @@ commands =
 
   'design:build':
     description: 'Compile the design'
-    exec: (config, callback) ->
+    exec: ->
       argv = process.argv.splice(3)
       args = minimist argv,
         string: ['source', 'destination']
@@ -108,7 +110,7 @@ commands =
 
   'design:publish':
     description: 'Show the script version'
-    exec: (config) ->
+    exec: ->
       args = minimist process.argv.splice(3),
         string: ['user', 'password', 'host', 'source']
         alias:
@@ -135,7 +137,7 @@ commands =
 
   'design:proxy':
     description: 'Start a design server that caches designs'
-    exec: (config, callback) ->
+    exec: ->
       args = minimist process.argv.splice(3),
         string: ['host', 'port']
         alias: h: 'host', p: 'port'
@@ -147,6 +149,7 @@ commands =
       proxy.start
         host: args.host
         port: args.port
+        cacheDirectory: path.join(config.cache, 'design-proxy')
       , (err, {server, port} = {}) ->
         if err?.code == 'EADDRINUSE'
           log.error('design:proxy', 'Failed to start the server on port %s', args.port)
@@ -164,7 +167,7 @@ commands =
 
   'project:design:list':
     description: 'List all designs of a project'
-    exec: (config, callback) ->
+    exec: ->
       authenticateSpace (err, {options, user, token} = {}) ->
         return log.error(err) if err
         api.space.listDesigns
@@ -181,7 +184,7 @@ commands =
 
   'project:design:add':
     description: 'Add a design to a project'
-    exec: (config, callback) ->
+    exec: ->
       authenticateSpace (err, {options, user, token} = {}) ->
         return log.error(err) if err
         api.space.addDesign
@@ -199,7 +202,7 @@ commands =
 
   'project:design:remove':
     description: 'Remove a design from a project'
-    exec: (config, callback) ->
+    exec: ->
       authenticateSpace (err, {options, user, token} = {}) ->
         return log.error(err) if err
         api.space.removeDesign
@@ -246,7 +249,7 @@ getSpace = (callback) ->
 
 
 spaceDesignConfig = ->
-  minimist process.argv.splice(3),
+  c = minimist process.argv.splice(3),
     string: ['user', 'password', 'host', 'space', 'name', 'version']
     alias:
       h: 'host'
@@ -256,3 +259,9 @@ spaceDesignConfig = ->
       project: 'space'
       n: 'name'
       v: 'version'
+
+  c.dir = config.dir
+  c.configs = config.configs
+  c.host = config.host
+  c.user = config.user
+  c
