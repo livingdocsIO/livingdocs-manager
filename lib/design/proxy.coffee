@@ -20,6 +20,16 @@ exports.start = (config, callback) ->
     return callback(err) if err && err.code != 'EEXIST'
 
     app = express()
+    app.use (req, res, next) ->
+      res.header('Access-Control-Allow-Origin', '*')
+      res.header('Access-Control-Allow-Methods', "OPTIONS, GET, PUT, POST, PATCH, DELETE")
+
+      if req.method == 'OPTIONS'
+        res.header('Access-Control-Allow-Headers', "Cache-Control, Pragma, Origin, Authorization, Content-Type, X-Requested-With")
+        return res.sendStatus(204)
+
+      next()
+
     app.get '/designs/:name/:version', (req, res) ->
       name = req.params.name
       version = req.params.version
