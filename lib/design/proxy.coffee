@@ -42,7 +42,7 @@ exports.start = (config, callback) ->
         cachePath: cachePath
       , (err, {stream, contentType} = {}) ->
         return sendFile(res)(err) if err || !stream
-        stream = stream.pipe(designJSONTransform({name, version, basePath}))
+        stream = stream.pipe(new DesignTransform({name, version, basePath}))
         sendFile(res)(null, {stream, contentType})
 
     app.get '/designs/:name/:version/:file(*)', (req, res) ->
@@ -70,27 +70,6 @@ sendFile = (res) ->
     return res.sendStatus(404) if !stream
     res.set('content-type', contentType)
     stream.pipe(res)
-
-
-designJSONTransform = ({name, version, basePath}) ->
-  chunks = []
-  stream = new require('stream').Readable()
-  stream._read = ->
-  stream.write = (data) -> chunks.push(data)
-  stream.end = (err) ->
-    buffer = Buffer.concat(chunks)
-    try
-     object = JSON.parse(buffer.toString())
-     object.assets ?= {}
-     object.assets.basePath = "#{basePath}/#{name}/#{version}"
-     json = JSON.stringify(object)
-    catch err
-      return stream.emit('error', err)
-
-    stream.push(json)
-    stream.push(null)
-
-  stream
 
 
 getDesignStream = (options, callback) ->
@@ -157,3 +136,30 @@ getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
     stream.pipe(gunzip()).pipe(extract)
 
 
+
+class DesignTransform extends require('stream').Readable
+
+  constructor: ({name, version, basePath}) ->
+    super()
+    @_rawDesign = []
+
+
+  _read: ->
+
+
+  write: (chunk) ->
+    @_rawDesign.push(chunk)
+
+
+  end: (err) ->
+    buffer = Buffer.concat(@_rawDesign)
+    try
+     object = JSON.parse(buffer.toString())
+     object.assets ?= {}
+     object.assets.basePath = "#{@basePath}/#{@name}/#{@version}"
+     json = JSON.stringify(object)
+    catch err
+      return @emit('error', err)
+
+    @push(json)
+    @push(null)
