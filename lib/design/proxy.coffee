@@ -137,22 +137,13 @@ getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
 
 
 
-class DesignTransform extends require('stream').Readable
+class DesignTransform extends require('stream').Transform
 
-  constructor: ({name, version, basePath}) ->
+  constructor: ({@name, @version, @basePath}) ->
     super()
-    @_rawDesign = []
 
 
-  _read: ->
-
-
-  write: (chunk) ->
-    @_rawDesign.push(chunk)
-
-
-  end: (err) ->
-    buffer = Buffer.concat(@_rawDesign)
+  _transform: (buffer, encoding, done) ->
     try
      object = JSON.parse(buffer.toString())
      object.assets ?= {}
@@ -161,5 +152,5 @@ class DesignTransform extends require('stream').Readable
     catch err
       return @emit('error', err)
 
-    @push(json)
-    @push(null)
+    done(null, json)
+
