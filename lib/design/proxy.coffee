@@ -8,6 +8,7 @@ mime = require('mime')
 tar = require('tar-stream')
 gunzip = require('gunzip-maybe')
 log = require('npmlog')
+eos = require('end-of-stream')
 
 
 exports.start = (config, callback) ->
@@ -92,13 +93,13 @@ designJSONTransform = ({name, version, basePath}) ->
   stream
 
 
-getDesignStream = ({name, version, host, cachePath}, callback) ->
-  filePath = path.join(cachePath, "#{name}-#{version}.tar.gz")
-  if fs.existsSync(filePath)
-    callback(null, fs.createReadStream(filePath))
+getDesignStream = (options, callback) ->
+  filePath = path.join(options.cachePath, "#{options.name}-#{options.version}.tar.gz")
+  tmpFilePath = filePath+'.tmp'
 
-  else
-    tarUrl = "#{host}/#{name}/#{version}.tar.gz"
+  fs.exists filePath, (exists) ->
+    return callback(null, fs.createReadStream(filePath)) if exists
+    tarUrl = "#{options.host}/#{options.name}/#{options.version}.tar.gz"
     request.get(tarUrl)
     .on 'error', (err) ->
       log.error('design:proxy', err)
@@ -110,12 +111,25 @@ getDesignStream = ({name, version, host, cachePath}, callback) ->
         callback()
 
       else
-        tmpFile = filePath+'.tmp'
-        write = fs.createWriteStream(tmpFile)
-        write.on 'finish', -> fs.rename(tmpFile, filePath)
-        write.on 'error', -> fs.unlink(tmpFile)
+        write = fs.createWriteStream(tmpFilePath)
+        callbacked = false
+        cleanup = (err) ->
+          return if callbacked
+          callbacked = true
+          fs.unlink tmpFilePath, -> log.error('design:proxy', err)
+          callback(err)
+
+        eos write, (err) ->
+          return cleanup(err) if err
+          fs.rename tmpFilePath, filePath, (err) ->
+            return cleanup(err) if err
+            log.info('design:proxy', "Successfully cached '#{tarUrl}'")
+            getDesignStream(options, callback)
+
+        eos res, (err) ->
+          return cleanup(err) if err
+
         res.pipe(write)
-        callback(null, res)
 
 
 getDesignFileStream = ({name, version, host, file, cachePath}, callback) ->
