@@ -21,6 +21,13 @@ exports.start = (config, callback) ->
     return callback(err) if err && err.code != 'EEXIST'
 
     app = express()
+    app.response.error = (err) ->
+      log.error('design:proxy', err)
+      @status(500).send
+        status: 500
+        message: err.message
+        stack: err.stack
+
     app.use (req, res, next) ->
       res.header('Access-Control-Allow-Origin', '*')
       res.header('Access-Control-Allow-Methods', "OPTIONS, GET, PUT, POST, PATCH, DELETE")
@@ -66,10 +73,12 @@ exports.start = (config, callback) ->
 
 sendFile = (res) ->
   (err, {stream, contentType} = {}) ->
-    return res.status(500).send(err) if err
+    return res.error(err) if err
     return res.sendStatus(404) if !stream
     res.set('content-type', contentType)
-    stream.pipe(res)
+    stream
+    .on 'error', (err) -> res.error(err)
+    .pipe(res)
 
 
 getDesignStream = (options, callback) ->
