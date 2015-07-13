@@ -121,6 +121,8 @@ commands =
           src: 'source'
 
       cwd = args.source || args._[0] || process.cwd()
+      args.dir = config.dir
+      args.configs = config.configs
       api.askAuthenticationOptions args, (options) ->
         options = _.extend({}, options, cwd: cwd)
         upload = require('../lib/upload')
