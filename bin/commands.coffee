@@ -230,26 +230,6 @@ authenticateSpace = (callback) ->
       callback(null, {options, user, token})
 
 
-getSpace = (callback) ->
-  args = spaceDesignConfig()
-  api.askAuthenticationOptions args, (options) ->
-    api.authenticate options, (err, {user, token} = {}) ->
-      return log.error(err) if err
-
-      spaceId = args.space || user.space_id
-      log.info('design:add', "Adding the design to the space ##{spaceId}")
-
-      api.space.get
-        host: options.host
-        token: token
-      , spaceId, (err, space) ->
-        return log.error(err) if err
-
-        return log.error('design:add', 'A design name is required') unless args.name
-        return log.error('design:add', 'A design version is required') unless args.version
-        callback({args, options, space, user, token})
-
-
 spaceDesignConfig = ->
   c = minimist process.argv.splice(3),
     string: ['user', 'password', 'host', 'space', 'name', 'version']
