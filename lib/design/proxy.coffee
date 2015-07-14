@@ -15,9 +15,11 @@ exports.start = (options, callback) ->
   assert(options.port, 'proxy.start(options, callback) requires a options.port param.')
   basePath = undefined
 
+  log.verbose('design:proxy', 'Ensure that cache directory exists')
   fs.mkdir options.cacheDirectory, (err) ->
     return callback(err) if err && err.code != 'EEXIST'
 
+    log.verbose('design:proxy', 'Initialize webserver')
     app = express()
     app.response.error = (err) ->
       log.error('design:proxy', err)
@@ -32,8 +34,10 @@ exports.start = (options, callback) ->
 
       if req.method == 'OPTIONS'
         res.header('Access-Control-Allow-Headers', "Cache-Control, Pragma, Origin, Authorization, Content-Type, X-Requested-With")
+        log.verbose('design:proxy', "Serving CORS request received on '#{req.path}', requested by #{req.ip}")
         return res.sendStatus(204)
 
+      log.verbose('design:proxy', "Serving '#{req.method} #{req.url}', requested by #{req.ip}")
       next()
 
     app.get '/designs/:name/:version', (req, res) ->
@@ -46,9 +50,17 @@ exports.start = (options, callback) ->
         file: 'design.json'
         cacheDirectory: options.cacheDirectory
       , (err, {stream, contentType} = {}) ->
-        return sendFile(res)(err) if err || !stream
-        stream = stream.pipe(new DesignTransform({name, version, basePath}))
-        sendFile(res)(null, {stream, contentType})
+        if err
+          sendFile(res)(err)
+
+        else if !stream
+          log.info('design:proxy', "Could not find the file '#{file}' in the design '#{name}@#{version}'") unless stream
+          sendFile(res)()
+
+        else
+          stream = stream.pipe(new DesignTransform({name, version, basePath}))
+          sendFile(res)(null, {stream, contentType})
+
 
     app.get '/designs/:name/:version/:file(*)', (req, res) ->
       getDesignFileStream
@@ -56,8 +68,18 @@ exports.start = (options, callback) ->
         name: req.params.name
         version: req.params.version
         file: req.params.file
-        cacheDirectory: cacheDirectory
-      , sendFile(res)
+        cacheDirectory: options.cacheDirectory
+      , (err, {stream, contentType} = {}) ->
+        if err
+          sendFile(res)(err)
+
+        else if !stream
+          log.info('design:proxy', "Could not find the file '#{req.params.file}' in the design '#{req.params.name}@#{req.params.version}'") unless stream
+          sendFile(res)()
+
+        else
+          sendFile(res)(null, {stream, contentType})
+
 
     server = app.listen options.port, (err) ->
       if err
@@ -84,16 +106,26 @@ getDesignStream = (options, callback) ->
   tmpFilePath = filePath+'.tmp'
 
   fs.exists filePath, (exists) ->
-    return callback(null, fs.createReadStream(filePath)) if exists
+    if exists
+      log.verbose('design:proxy', "Loading design '#{filePath}'")
+      return callback(null, fs.createReadStream(filePath))
+
+    log.verbose('design:proxy', "Design #{options.name}@#{options.version} is not cached.")
     tarUrl = "#{options.host}/designs/#{options.name}/#{options.version}.tar.gz"
+    log.verbose('design:proxy', "Fetching '#{tarUrl}'")
+
     request.get(tarUrl)
     .on 'error', (err) ->
-      log.error('design:proxy', err)
+      log.error('design:proxy', "Failed to fetch '#{tarUrl}'")
       callback(err)
 
     .on 'response', (res) ->
       if res.statusCode != 200
-        log.info('design:proxy', "Failed to fetch '#{tarUrl}'. Received statusCode #{res.statusCode}")
+        log.error('design:proxy', "Failed to fetch '#{tarUrl}'. Received statusCode #{res.statusCode}")
+        callback()
+
+      else if !_.contains(res.headers, 'gzip')
+        log.error('design:proxy', "Failed to fetch '#{tarUrl}'. Did not receive a Tar archive.")
         callback()
 
       else
@@ -107,6 +139,8 @@ getDesignStream = (options, callback) ->
 
         eos write, (err) ->
           return cleanup(err) if err
+          log.verbose('design:proxy', "Successfully downloaded '#{tarUrl}' to '#{tmpFilePath}'. Moving tmp file to '#{filePath}'")
+
           fs.rename tmpFilePath, filePath, (err) ->
             return cleanup(err) if err
             log.info('design:proxy', "Successfully cached '#{tarUrl}'")
@@ -121,12 +155,15 @@ getDesignStream = (options, callback) ->
 getDesignFileStream = ({name, version, host, file, cacheDirectory}, callback) ->
   callback = _.once(callback)
   extract = tar.extract()
+
+  log.verbose('design:proxy', "Requested the file '#{file}' from the design '#{name}@#{version}'")
   extract.on 'entry', (header, stream, done) ->
     if header.name != "undefined/#{file}"
       stream.resume()
       done()
 
     else
+      log.verbose('design:proxy', "Found the file '#{file}' in the design '#{name}@#{version}'")
       contentType = mime.lookup(header.name)
       callback(null, {contentType, stream})
 
@@ -139,7 +176,9 @@ getDesignFileStream = ({name, version, host, file, cacheDirectory}, callback) ->
 
   extract.on 'finish', -> callback()
   getDesignStream {name, version, host, cacheDirectory}, (err, stream) ->
-    return callback(err) if err || !stream
+    if err || !stream
+      return callback(err)
+
     stream.pipe(gunzip()).pipe(extract)
 
 
