@@ -41,7 +41,7 @@
   // Log update notifications
   var updateNotifier = require('update-notifier');
   var pkg = require('../package.json');
-  var notifier = updateNotifier({pkg: pkg, updateCheckInterval: 7*24*3600*1000})
+  var notifier = updateNotifier({pkg: pkg})
 
   if (notifier.update) {
     console.log([
