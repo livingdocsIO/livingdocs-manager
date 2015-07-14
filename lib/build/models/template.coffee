@@ -22,8 +22,8 @@ class Template
     # filter out comment nodes,
     # check for one root element
     children = _.filter($.root().children(), (el) -> el.nodeType != 8)
-    if children.length > 1
-      err = new Error("The Design '#{design.config.name}', Template '#{templateName}' contains more than one root element")
+    if children.length != 1
+      err = new Error("The Design '#{design.config.name}', Template '#{templateName}' contains #{children.length} root elements. Only 1 is supported.")
       design.warn(err)
 
     html = utils.minifyHtml($.html(), options, @name, design)
