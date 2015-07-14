@@ -1,3 +1,4 @@
+_ = require('lodash')
 cheerio = require("cheerio")
 utils = require("../../utils")
 
@@ -18,8 +19,10 @@ class Template
     config = JSON.parse($(options.configurationElement).html()) || {}
     $(options.configurationElement).remove()
 
+    # filter out comment nodes,
     # check for one root element
-    if $.root().children().length > 1
+    children = _.filter($.root().children(), (el) -> el.nodeType != 8)
+    if children.length > 1
       err = new Error("The Design '#{design.config.name}', Template '#{templateName}' contains more than one root element")
       design.warn(err)
 
