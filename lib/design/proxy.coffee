@@ -85,7 +85,7 @@ getDesignStream = (options, callback) ->
 
   fs.exists filePath, (exists) ->
     return callback(null, fs.createReadStream(filePath)) if exists
-    tarUrl = "#{options.host}/#{options.name}/#{options.version}.tar.gz"
+    tarUrl = "#{options.host}/designs/#{options.name}/#{options.version}.tar.gz"
     request.get(tarUrl)
     .on 'error', (err) ->
       log.error('design:proxy', err)

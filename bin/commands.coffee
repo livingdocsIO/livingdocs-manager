@@ -144,7 +144,7 @@ commands =
         string: ['host', 'port']
         alias: h: 'host', p: 'port'
 
-      args.host ?= 'http://api.livingdocs.io/designs'
+      args.host ?= 'http://api.livingdocs.io'
       args.port ?= 3000
 
       proxy = require('../lib/design/proxy')
