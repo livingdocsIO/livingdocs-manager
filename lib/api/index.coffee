@@ -122,6 +122,8 @@ api.space =
     , (err, res, body) ->
       return callback(err) if err
       return callback(api.requestError(res)) if res.statusCode != 200
+      log.verbose('api:space:get', response.toJSON())
+      return callback(new Error("Invalid statusCode #{response.statusCode}, body #{response.rawText}")) if response.statusCode != 204
       callback(null, body.space)
 
 
@@ -135,50 +137,41 @@ api.space =
 
   addDesign: (options, {spaceId, design} = {}, callback) ->
     assertDesign(design)
-    api.space.get options, spaceId, (err, space) ->
-      return callback(err) if err || !space
-
-      design =
+    request
+      method: 'post'
+      url: "#{options.host}/spaces/#{spaceId}/add-design",
+      headers: Authorization: "Bearer #{options.token}"
+      body:
         name: design.name
         version: design.version
-        url: options.host+"/designs/#{design.name}/#{design.version}"
-        is_selectable: true
-
-      identifiers = _.pick(design, 'name', 'version')
-      contained = _.find(space.config.designs, identifiers)
-      isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), identifiers)
-      if isDefault && contained
-        log.info('space:addDesign', 'This design is already set as default')
-        return callback(null, space)
-
-      space.config.designs ?= []
-      space.config.designs.push(design) if !contained
-      space.config.default_design = design
-      updateConfig(options, space, callback)
+      json: true
+    , (err, response, body) ->
+      return callback(err) if err
+      log.verbose('api:space:addDesign', 'Received error response')
+      log.verbose('api:space:addDesign', response.toJSON())
+      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
+      callback(null)
 
 
   removeDesign: (options, {spaceId, design} = {}, callback) ->
     assertDesign(design)
-    api.space.get options, spaceId, (err, space) ->
-      return callback(err) if err || !space
-
-      space.config.designs ?= []
-      contained = _.find(space.config.designs, design)
-      isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), _.pick(design, 'name', 'version'))
-      if isDefault
-        return callback(new Error("Can't remove a default design. Please add a new one first."))
-
-      if !contained
-        log.info('space:removeDesign', "The space doesn't contain such a design")
-        return callback(null, space)
-
-      space.config.designs = _.reject(space.config.designs, design)
-      updateConfig(options, space, callback)
+    request
+      method: 'post'
+      url: "#{options.host}/spaces/#{spaceId}/remove-design",
+      headers: Authorization: "Bearer #{options.token}"
+      body:
+        name: design.name
+        version: design.version
+      json: true
+    , (err, response, body) ->
+      return callback(err) if err
+      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 200
+      callback(null)
 
 
 assertDesign = (design) ->
   assert(design.name, 'design.name is required')
-  assert(design.version, 'design.version is required')
+  assert(_.isString(design.version), 'design.version is required')
 
 
 updateConfig = (options, space, callback) ->

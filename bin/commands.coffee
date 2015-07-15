@@ -187,7 +187,7 @@ commands =
           design:
             name: name
             version: version
-        , (err, space) ->
+        , (err) ->
           return log.error('design:add', err) if err
           log.info('design:add', "The design '#{name}@#{version}' is now linked to your project.")
 
@@ -239,7 +239,6 @@ authenticateSpace = (callback) ->
       s: 'space'
       project: 'space'
       n: 'name'
-      v: 'version'
 
   authenticate (err, {user, token, host} = {}) ->
     return callback(err) if err
