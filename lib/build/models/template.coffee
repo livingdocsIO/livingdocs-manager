@@ -19,14 +19,15 @@ class Template
     config = JSON.parse($(options.configurationElement).html()) || {}
     $(options.configurationElement).remove()
 
-    # filter out comment nodes,
+    # filter out comment & text nodes
     # check for one root element
-    children = _.filter($.root().children(), (el) -> el.nodeType != 8)
+    children = _.filter($.root().contents(), (el) -> el.nodeType == 1)
     if children.length != 1
-      err = new Error("The Design '#{design.config.name}', Template '#{templateName}' contains #{children.length} root elements. Only 1 is supported.")
+      err = new Error("The Design '#{design.config.name}', Template '#{templateName}' contains #{children.length} root elements. Components only work with one root element.")
       design.warn(err)
 
-    html = utils.minifyHtml($.html(), options, @name, design)
+    outerHtml = $.html(children[0])
+    html = utils.minifyHtml(outerHtml, options, @name, design)
     design.debug("parsed template '#{templateName}'")
     new Template(templateName, html, config)
 
