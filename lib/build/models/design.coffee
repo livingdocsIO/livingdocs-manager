@@ -84,19 +84,16 @@ class Design extends EventEmitter
 
     @debug("Save design.js file to #{javascript_dest}")
     mkdirp path.dirname(javascript_dest), (err) =>
-      if err
-        @emit('error', err)
-        return @emit('end')
+      return @error(err) if err
 
       fs.writeFile javascript_dest, javascript, (err) =>
-        if err
-          @emit('error', err)
-          return @emit('end')
+        return @error(err) if err
 
         @debug('Saved design.js file')
         @debug('Save design.json file')
         fs.writeFile json_dest, json, (err) =>
-          @emit('error', err) if err
+          return @error(err) if err
+
           @debug('Saved design.json file') unless err
           @emit('end')
 
@@ -107,6 +104,11 @@ class Design extends EventEmitter
 
   warn: (err) ->
     @emit('warn', err)
+
+
+  error: (err) ->
+    @emit('error', err)
+    @emit('end')
 
 
 module.exports = Design
