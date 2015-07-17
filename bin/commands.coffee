@@ -79,9 +79,10 @@ commands =
           dst: 'destination'
           dest: 'destination'
 
+      args.source = args._[0] || process.cwd()
+      args.destination = args._[1] || process.cwd()
+
       error = null
-      args.source ?= args._[0] || process.cwd()
-      args.destination ?= args._[1] || process.cwd()
       Design.build(src: args.source, dest: args.destination)
       .on 'debug', (debug) ->
         log.verbose('build', debug)
@@ -94,9 +95,9 @@ commands =
 
       .on 'end', ->
         if error
-          log.error('build', error)
+          log.error('design:build', error)
         else
-          log.info('build', 'Design compiled...')
+          log.info('design:build', 'Design compiled...')
 
         callback?(error)
 
@@ -110,29 +111,26 @@ commands =
     description: 'Show the script version'
     exec: ->
       args = minimist process.argv.splice(3),
-        string: ['user', 'password', 'host', 'source']
-        alias:
-          h: 'host'
-          u: 'user'
-          p: 'password'
-          s: 'source'
-          src: 'source'
+        string: ['source']
+        alias: s: 'source', src: 'source'
 
-      cwd = args.source || args._[0] || process.cwd()
-      args.dir = config.dir
-      args.configs = config.configs
-      api.askAuthenticationOptions args, (options) ->
-        options = _.extend({}, options, cwd: cwd)
+      args.source ?= args._[0] || process.cwd()
+      authenticate (err, {user, token, host} = {}) ->
+        return log.error('design:publish', 'Failed to authenticate', err) if err
         upload = require('../lib/upload')
-        upload.exec options, (err, {design, url}={}) ->
+        upload.exec
+          host: host
+          token: token
+          cwd: args.source
+        , (err, {design, url} = {}) ->
           if err?.code == 'ENOENT'
-            log.error('publish', 'No design.json file found in %s', cwd)
+            log.error('design:publish', 'No design.json file found in %s', args.source)
 
           else if err
-            log.error('publish', err.stack)
+            log.error('design:publish', err)
 
           else
-            log.info('publish', 'Published the design %s@%s to %s', design.name, design.version, url)
+            log.info('design:publish', 'Published the design %s@%s to %s', design.name, design.version, url)
 
 
   'design:proxy':
@@ -168,54 +166,46 @@ commands =
   'project:design:list':
     description: 'List all designs of a project'
     exec: ->
-      authenticateSpace (err, {options, user, token} = {}) ->
-        return log.error(err) if err
-        api.space.listDesigns
-          host: options.host
-          token: token
-        ,
-          options.space
-        , (err, {defaultDesign, designs} = {}) ->
-          return log.error('design:list', err) if err
+      authenticateSpace (err, {host, token, space} = {}) ->
+        return log.error('project:design:list', err) if err
+        api.space.listDesigns {host, token}, space, (err, {defaultDesign, designs} = {}) ->
+          return log.error('project:design:list', err) if err
           print.topic('Default design').design(defaultDesign)()
-
           print.topic('Designs').each(designs, print.design)()
 
 
   'project:design:add':
     description: 'Add a design to a project'
     exec: ->
-      authenticateSpace (err, {options, user, token} = {}) ->
-        return log.error(err) if err
+      authenticateSpace (err, {host, user, token, space, name, version} = {}) ->
+        return log.error('project:design:add', err) if err
         api.space.addDesign
-          host: options.host
+          host: host
           token: token
         ,
-          spaceId: options.space
+          spaceId: space
           design:
-            name: options.name
-            version: options.version
+            name: name
+            version: version
         , (err, space) ->
           return log.error('design:add', err) if err
-          log.info('design:add', "The design '#{options.name}@#{options.version}' is now linked to your project.")
+          log.info('design:add', "The design '#{name}@#{version}' is now linked to your project.")
 
 
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: ->
-      authenticateSpace (err, {options, user, token} = {}) ->
-        return log.error(err) if err
+      authenticateSpace (err, {host, user, token, space, name, version} = {}) ->
+        return log.error('project:design:remove', err) if err
         api.space.removeDesign
-          host: options.host
+          host: host
           token: token
         ,
-          spaceId: options.space
-          design:
-            name: options.name
-            version: options.version
+          spaceId: space
+          design: {name, version}
         , (err, space) ->
-          return log.error('design:remove', err) if err
-          log.info('design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
+          return log.error('project:design:remove', err) if err
+          log.info('design:remove', 'The design %s@%s got removed from your project.', name, version)
 
 
 authenticate = (callback) ->
