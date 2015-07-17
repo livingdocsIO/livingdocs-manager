@@ -9,16 +9,27 @@ mkdirp = require('mkdirp')
 
 api = exports
 api.requestError = (res, body, message) ->
-  error = new Error(message || "Unhandled response code #{res.statusCode}")
-  error.status = res.statusCode
-  error.request =
+  if !message && res.statusCode == 400 && res.body?.error_details
+    message = 'Server validation Error:\n'
+    message += "#{key}: #{msg}\n" for key, msg of res.body.error_details
+    err = new Error(message)
+    err.stack = undefined
+
+  else
+    err = new Error(message || "Unhandled response code #{res.statusCode}")
+
+  err.status = res.statusCode
+  err.request =
     url: res.request.uri.href
     method: res.request.method
     headers: res.request.headers
-    body: body if body
 
-  error.response = res.toJSON()
-  delete error.response.request
+  if body
+    err.request.body = body
+
+  err.response = res.toJSON()
+  delete err.response.request
+
   err
 
 
