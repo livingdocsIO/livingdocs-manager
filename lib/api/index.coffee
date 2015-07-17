@@ -8,7 +8,32 @@ rc = require('rc')
 mkdirp = require('mkdirp')
 
 api = exports
-exports.authenticate = (options, callback) ->
+api.requestError = (res, body, message) ->
+  if !message && res.statusCode == 400 && res.body?.error_details
+    message = 'Server validation Error:\n'
+    message += "#{key}: #{msg}\n" for key, msg of res.body.error_details
+    err = new Error(message)
+    err.stack = undefined
+
+  else
+    err = new Error(message || "Unhandled response code #{res.statusCode}")
+
+  err.status = res.statusCode
+  err.request =
+    url: res.request.uri.href
+    method: res.request.method
+    headers: res.request.headers
+
+  if body
+    err.request.body = body
+
+  err.response = res.toJSON()
+  delete err.response.request
+
+  err
+
+
+api.authenticate = (options, callback) ->
   _.each ['user', 'password', 'host'], (prop) ->
     assert(typeof options[prop] is 'string', "The parameter 'options.#{prop}' is required")
 
@@ -31,7 +56,8 @@ exports.authenticate = (options, callback) ->
 
     else if res?.statusCode != 200
       error = new Error("Authentication: #{body.error}")
-      callback(error)
+      body = username: options.username, password: '[redacted]'
+      callback(api.requestError(res, body, "Authentication failed"))
 
     else
       callback null,
@@ -39,7 +65,7 @@ exports.authenticate = (options, callback) ->
         token: body.access_token
 
 
-exports.askAuthenticationOptions = (args, callback) ->
+api.askAuthenticationOptions = (args, callback) ->
   if args.host && args.user && args.password
     return callback(args)
 
@@ -86,21 +112,21 @@ exports.askAuthenticationOptions = (args, callback) ->
       callback(options)
 
 
-exports.space =
+api.space =
   get: (options, spaceId, callback) ->
     request
       method: 'get'
       url: "#{options.host}/spaces/#{spaceId}",
       headers: Authorization: "Bearer #{options.token}"
       json: true
-    , (err, response, body) ->
+    , (err, res, body) ->
       return callback(err) if err
-      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 200
+      return callback(api.requestError(res)) if res.statusCode != 200
       callback(null, body.space)
 
 
   listDesigns: (options, spaceId, callback) ->
-    @get options, spaceId, (err, space) ->
+    api.space.get options, spaceId, (err, space) ->
       return callback(err) if err
       callback null,
         defaultDesign: space.config.default_design
@@ -164,5 +190,5 @@ updateConfig = (options, space, callback) ->
     json: true
   , (err, response, body) ->
     return callback(err) if err
-    return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 201
+    return callback(api.requestError(response, space.config)) if response.statusCode != 201
     callback(null, body.space)
