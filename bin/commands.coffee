@@ -55,16 +55,14 @@ commands =
   'user:info':
     description: 'Prints the user information'
     exec: ->
-      args = spaceDesignConfig()
-      api.askAuthenticationOptions args, (options) ->
-        api.authenticate options, (err, {user, token} = {}) ->
-          return log.error(err) if err
-          print.topic('User').user(user)()
-          print.topic('Access token').line(token)()
+      authenticate (err, {host, user, token} = {}) ->
+        return log.error('user:info', err) if err
+        print.topic('User').user(user)()
+        print.topic('Access token').line(token)()
 
 
   'build': ->
-    log.warn('`ldm publish` is obsolete. Please use `ldm design:build`.')
+    log.warn('`ldm build` is obsolete. Please use `ldm design:build`.')
     commands['design:build']
 
 
@@ -220,30 +218,45 @@ commands =
           log.info('design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
 
 
-authenticateSpace = (callback) ->
-  args = spaceDesignConfig()
-  api.askAuthenticationOptions args, (options) ->
-    api.authenticate options, (err, {user, token} = {}) ->
-      return callback(err) if err
-      options = _.extend({}, args, options)
-      options.space ?= user.space_id
-      callback(null, {options, user, token})
+authenticate = (callback) ->
+  defaults = minimist process.argv.splice(3),
+    string: ['user', 'password', 'host']
+    default:
+      host: config.host
+      user: config.user
+      dir: config.dir # configdir
+      configs: config.configs # existing configfiles
 
-
-spaceDesignConfig = ->
-  c = minimist process.argv.splice(3),
-    string: ['user', 'password', 'host', 'space', 'name', 'version']
     alias:
       h: 'host'
       u: 'user'
       p: 'password'
+
+  api.askAuthenticationOptions defaults, (options) ->
+    api.authenticate
+      host: options.host
+      user: options.user
+      password: options.password
+    , (err, {user, token} = {}) ->
+      return callback(err) if err
+      callback(null, {user, token, host: options.host})
+
+
+authenticateSpace = (callback) ->
+  args = minimist process.argv.splice(3),
+    string: ['space', 'name', 'version']
+    alias:
       s: 'space'
       project: 'space'
       n: 'name'
       v: 'version'
 
-  c.dir = config.dir
-  c.configs = config.configs
-  c.host = config.host
-  c.user = config.user
-  c
+  authenticate (err, {user, token, host} = {}) ->
+    return callback(err) if err
+    callback null,
+      user: user
+      token: token
+      host: host
+      space: args.space || user.space_id
+      name: args.name
+      version: args.version
