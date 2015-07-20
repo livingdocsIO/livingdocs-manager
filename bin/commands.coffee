@@ -69,7 +69,7 @@ commands =
   'design:build':
     description: 'Compile the design'
     exec: ->
-      argv = process.argv.splice(3)
+      argv = process.argv.slice(3)
       args = minimist argv,
         string: ['source', 'destination']
         alias:
@@ -110,7 +110,7 @@ commands =
   'design:publish':
     description: 'Show the script version'
     exec: ->
-      args = minimist process.argv.splice(3),
+      args = minimist process.argv.slice(3),
         string: ['source']
         alias: s: 'source', src: 'source'
 
@@ -136,7 +136,7 @@ commands =
   'design:proxy':
     description: 'Start a design server that caches designs'
     exec: ->
-      args = minimist process.argv.splice(3),
+      args = minimist process.argv.slice(3),
         string: ['host', 'port']
         alias: h: 'host', p: 'port'
 
@@ -209,7 +209,7 @@ commands =
 
 
 authenticate = (callback) ->
-  defaults = minimist process.argv.splice(3),
+  defaults = minimist process.argv.slice(3),
     string: ['user', 'password', 'host']
     default:
       host: config.host
@@ -233,7 +233,7 @@ authenticate = (callback) ->
 
 
 authenticateSpace = (callback) ->
-  args = minimist process.argv.splice(3),
+  args = minimist process.argv.slice(3),
     string: ['space', 'name', 'version']
     alias:
       s: 'space'
