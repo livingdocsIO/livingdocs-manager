@@ -114,6 +114,7 @@ commands =
         string: ['source']
         alias: s: 'source', src: 'source'
 
+
       args.source ?= args._[0] || process.cwd()
       authenticate (err, {user, token, host} = {}) ->
         return log.error('design:publish', 'Failed to authenticate', err) if err

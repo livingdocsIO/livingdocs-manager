@@ -7,109 +7,109 @@ request = require('request')
 rc = require('rc')
 mkdirp = require('mkdirp')
 
-api = exports
-api.requestError = (res, body, message) ->
-  if !message && res.statusCode == 400 && res.body?.error_details
-    message = 'Server validation Error:\n'
-    message += "#{key}: #{msg}\n" for key, msg of res.body.error_details
-    err = new Error(message)
-    err.stack = undefined
-
-  else
-    err = new Error(message || "Unhandled response code #{res.statusCode}")
-
-  err.status = res.statusCode
-  err.request =
-    url: res.request.uri.href
-    method: res.request.method
-    headers: res.request.headers
-
-  if body
-    err.request.body = body
-
-  err.response = res.toJSON()
-  delete err.response.request
-
-  err
-
-
-api.authenticate = (options, callback) ->
-  _.each ['user', 'password', 'host'], (prop) ->
-    assert(typeof options[prop] is 'string', "The parameter 'options.#{prop}' is required")
-
-  request
-    method: 'post'
-    url: options.host+'/authenticate'
-    body:
-      username: options.user
-      password: options.password
-    json: true
-  , (err, res, body) ->
-    if res?.statusCode == 401
-      error = new Error('Authentication: Credentials invalid')
-      callback(error)
-
-    else if err
-      error = new Error("Authentication: #{err.message}")
-      error.stack = err.stack
-      callback(error)
-
-    else if res?.statusCode != 200
-      error = new Error("Authentication: #{body.error}")
-      body = username: options.username, password: '[redacted]'
-      callback(api.requestError(res, body, "Authentication failed"))
+module.exports = api =
+  requestError: (res, body, message) ->
+    if !message && res.statusCode == 400 && res.body?.error_details
+      message = 'Server validation Error:\n'
+      message += "#{key}: #{msg}\n" for key, msg of res.body.error_details
+      err = new Error(message)
+      err.stack = undefined
 
     else
-      callback null,
-        user: body.user
-        token: body.access_token
+      err = new Error(message || "Unhandled response code #{res.statusCode}")
+
+    err.status = res.statusCode
+    err.request =
+      url: res.request.uri.href
+      method: res.request.method
+      headers: res.request.headers
+
+    if body
+      err.request.body = body
+
+    err.response = res.toJSON()
+    delete err.response.request
+
+    err
 
 
-api.askAuthenticationOptions = (args, callback) ->
-  if args.host && args.user && args.password
-    return callback(args)
+  authenticate: (options, callback) ->
+    _.each ['user', 'password', 'host'], (prop) ->
+      assert(typeof options[prop] is 'string', "The parameter 'options.#{prop}' is required")
+
+    request
+      method: 'post'
+      url: options.host+'/authenticate'
+      body:
+        username: options.user
+        password: options.password
+      json: true
+    , (err, res, body) ->
+      if res?.statusCode == 401
+        error = new Error('Authentication: Credentials invalid')
+        callback(error)
+
+      else if err
+        error = new Error("Authentication: #{err.message}")
+        error.stack = err.stack
+        callback(error)
+
+      else if res?.statusCode != 200
+        error = new Error("Authentication: #{body.error}")
+        body = username: options.username, password: '[redacted]'
+        callback(api.requestError(res, body, "Authentication failed"))
+
+      else
+        callback null,
+          user: body.user
+          token: body.access_token
 
 
-  inquirer = require('inquirer')
-  inquirer.prompt [
-    name: 'host'
-    message: 'Host'
-    default: args.host
-    validate: (val) ->
-      return true if val.trim()
-      'A design server is required to publish the design'
-  ,
-    name: 'user'
-    message: 'Email'
-    default: args.user
-    validate: (val) -> /.*@.*/.test(val)
-  ,
-    name: 'password'
-    message: 'Password'
-    type: 'password'
-    filter: (val) -> return val if !!val
-    default: args.password
-    validate: (val) ->
-      return true if val.trim() && val.length > 5
-      'The password must contain more than 5 characters.'
-  ], (options) ->
-    options = _.extend({}, args, options)
-    options.host = "http://#{options.host}" unless /^(http|https):\/\//.test(options.host)
-    if _.isEmpty(options.configs)
-      configContent = JSON.stringify
-        host: options.host
-        user: options.user
-      , null, 2
+  askAuthenticationOptions: (args, callback) ->
+    if args.host && args.user && args.password
+      return callback(args)
 
-      configFilePath = path.join(options.dir, 'config')
-      mkdirp path.dirname(configFilePath), (err) ->
-        return callback(err) if err
-        fs.writeFile configFilePath, configContent, (err) ->
-          log.warn(err) if err
-          callback(options)
 
-    else
-      callback(options)
+    inquirer = require('inquirer')
+    inquirer.prompt [
+      name: 'host'
+      message: 'Host'
+      default: args.host
+      validate: (val) ->
+        return true if val.trim()
+        'A design server is required to publish the design'
+    ,
+      name: 'user'
+      message: 'Email'
+      default: args.user
+      validate: (val) -> /.*@.*/.test(val)
+    ,
+      name: 'password'
+      message: 'Password'
+      type: 'password'
+      filter: (val) -> return val if !!val
+      default: args.password
+      validate: (val) ->
+        return true if val.trim() && val.length > 5
+        'The password must contain more than 5 characters.'
+    ], (options) ->
+      options = _.extend({}, args, options)
+      options.host = "http://#{options.host}" unless /^(http|https):\/\//.test(options.host)
+      if _.isEmpty(options.configs)
+        configContent = JSON.stringify
+          host: options.host
+          user: options.user
+        , null, 2
+
+        configFilePath = path.join(options.dir, 'config')
+        mkdirp path.dirname(configFilePath), (err) ->
+          return callback(err) if err
+          fs.writeFile configFilePath, configContent, (err) ->
+            log.warn(err) if err
+            callback(options)
+
+      else
+        callback(options)
 
 
 api.space =
