@@ -3,7 +3,6 @@
 
   var log = require('npmlog')
   require('coffee-script/register');
-  process.title = 'livingdocs';
 
   var action = process.argv.slice(2, 3)[0];
   var args = require('minimist')(process.argv.slice(3), {
