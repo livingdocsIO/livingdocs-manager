@@ -112,34 +112,32 @@ api.askAuthenticationOptions = (args, callback) ->
       callback(options)
 
 
-api.space =
-  get: (options, spaceId, callback) ->
+api.project =
+  get: (options, projectId, callback) ->
     request
       method: 'get'
-      url: "#{options.host}/spaces/#{spaceId}",
+      url: "#{options.host}/projects/#{projectId}",
       headers: Authorization: "Bearer #{options.token}"
       json: true
     , (err, res, body) ->
       return callback(err) if err
       return callback(api.requestError(res)) if res.statusCode != 200
-      log.verbose('api:space:get', response.toJSON())
-      return callback(new Error("Invalid statusCode #{response.statusCode}, body #{response.rawText}")) if response.statusCode != 204
-      callback(null, body.space)
+      log.verbose('api:project:get', response.toJSON())
+      callback(null, body.project)
 
-
-  listDesigns: (options, spaceId, callback) ->
-    api.space.get options, spaceId, (err, space) ->
+  listDesigns: (options, projectId, callback) ->
+    @get options, projectId, (err, project) ->
       return callback(err) if err
       callback null,
-        defaultDesign: space.config.default_design
-        designs: space.config.designs
+        defaultDesign: project.config.default_design
+        designs: project.config.designs
 
 
-  addDesign: (options, {spaceId, design} = {}, callback) ->
+  addDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
     request
       method: 'post'
-      url: "#{options.host}/spaces/#{spaceId}/add-design",
+      url: "#{options.host}/projects/#{projectId}/add-design",
       headers: Authorization: "Bearer #{options.token}"
       body:
         name: design.name
@@ -147,17 +145,17 @@ api.space =
       json: true
     , (err, response, body) ->
       return callback(err) if err
-      log.verbose('api:space:addDesign', 'Received error response')
-      log.verbose('api:space:addDesign', response.toJSON())
+      log.verbose('api:project:addDesign', 'Received error response')
+      log.verbose('api:project:addDesign', response.toJSON())
       return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
       callback(null)
 
 
-  removeDesign: (options, {spaceId, design} = {}, callback) ->
+  removeDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
     request
       method: 'post'
-      url: "#{options.host}/spaces/#{spaceId}/remove-design",
+      url: "#{options.host}/projects/#{projectId}/remove-design",
       headers: Authorization: "Bearer #{options.token}"
       body:
         name: design.name
@@ -174,14 +172,15 @@ assertDesign = (design) ->
   assert(_.isString(design.version), 'design.version is required')
 
 
-updateConfig = (options, space, callback) ->
+updateConfig = (options, project, callback) ->
   request
     method: 'put'
-    url: "#{options.host}/spaces/#{space.id}/config",
+    url: "#{options.host}/projects/#{project.id}/config",
     headers: Authorization: "Bearer #{options.token}"
-    body: space.config
+    body: project.config
     json: true
   , (err, response, body) ->
     return callback(err) if err
-    return callback(api.requestError(response, space.config)) if response.statusCode != 201
-    callback(null, body.space)
+    return callback(api.requestError(response, project)) if response.statusCode != 201
+    return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 201
+    callback(null, body.project)

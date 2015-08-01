@@ -36,7 +36,7 @@ print.user = (user) ->
     .line 'Email', user.email
     .line 'First name', user.first_name
     .line 'Last name', user.last_name
-    .line 'Space ID', user.space_id
+    .line 'Project ID', user.space_id
 
   print
 

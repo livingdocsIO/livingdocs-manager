@@ -32,6 +32,12 @@ exports.exec = (options, callback) ->
 
   exports.putJson {design, token, host}, (err, {design, url}={}) ->
     return callback(err) if err
+
+    console.log """
+    Email: #{user.email}
+    Project id: #{user.space_id}
+    """
+
     exports.uploadAssets {cwd, host, token, design}, (err) ->
       return callback(err) if err
       callback(null, {design, url})
