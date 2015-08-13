@@ -190,11 +190,11 @@ commands =
         ,
           projectId: options.project
           design:
-            name: name
-            version: version
+            name: options.name
+            version: options.version
         , (err) ->
           return log.error('project:design:add', err) if err
-          log.info('project:design:add', "The design '#{name}@#{version}' is now linked to your project.")
+          log.info('project:design:add', "The design '#{options.name}@#{options.version}' is now linked to your project.")
 
 
   'project:design:remove':
@@ -239,22 +239,9 @@ authenticate = (callback) ->
 
 
 authenticateProject = (callback) ->
-  args = projectDesignConfig()
-  api.askAuthenticationOptions args, (options) ->
-    api.authenticate options, (err, {user, token} = {}) ->
-      return callback(err) if err
-      options = _.extend({}, args, options)
-      options.project ?= user.project_id
-      callback(null, {options, user, token})
-
-
-projectDesignConfig = ->
   c = minimist process.argv.splice(3),
-    string: ['user', 'password', 'host', 'project', 'name', 'version']
+    string: ['project', 'name', 'version']
     alias:
-      h: 'host'
-      u: 'user'
-      p: 'password'
       s: 'project'
       project: 'project'
       n: 'name'
@@ -264,7 +251,8 @@ projectDesignConfig = ->
     callback null,
       user: user
       token: token
-      host: host
-      space: args.space || user.space_id
-      name: args.name
-      version: args.version
+      options:
+        host: host
+        project: c.project || user.project_id || user.space_id
+        name: c.name
+        version: c.version
