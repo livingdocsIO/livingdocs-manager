@@ -167,9 +167,14 @@ commands =
   'project:design:list':
     description: 'List all designs of a project'
     exec: ->
-      authenticateSpace (err, {host, token, space} = {}) ->
+      authenticateProject (err, {options, user, token} = {}) ->
         return log.error('project:design:list', err) if err
-        api.space.listDesigns {host, token}, space, (err, {defaultDesign, designs} = {}) ->
+        api.project.listDesigns
+          host: options.host
+          token: token
+        ,
+          options.project
+        , (err, {defaultDesign, designs} = {}) ->
           return log.error('project:design:list', err) if err
           print.topic('Default design').design(defaultDesign)()
           print.topic('Designs').each(designs, print.design)()
@@ -178,35 +183,37 @@ commands =
   'project:design:add':
     description: 'Add a design to a project'
     exec: ->
-      authenticateSpace (err, {host, user, token, space, name, version} = {}) ->
+      authenticateProject (err, {options, user, token} = {}) ->
         return log.error('project:design:add', err) if err
-        api.space.addDesign
-          host: host
+        api.project.addDesign
+          host: options.host
           token: token
         ,
-          spaceId: space
+          projectId: options.project
           design:
-            name: name
-            version: version
-        , (err, space) ->
-          return log.error('design:add', err) if err
-          log.info('design:add', "The design '#{name}@#{version}' is now linked to your project.")
+            name: options.name
+            version: options.version
+        , (err) ->
+          return log.error('project:design:add', err) if err
+          log.info('project:design:add', "The design '#{options.name}@#{options.version}' is now linked to your project.")
 
 
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: ->
-      authenticateSpace (err, {host, user, token, space, name, version} = {}) ->
-        return log.error('project:design:remove', err) if err
-        api.space.removeDesign
-          host: host
+      authenticateProject (err, {options, user, token} = {}) ->
+        return log.error(err) if err
+        api.project.removeDesign
+          host: options.host
           token: token
         ,
-          spaceId: space
-          design: {name, version}
-        , (err, space) ->
-          return log.error('project:design:remove', err) if err
-          log.info('design:remove', 'The design %s@%s got removed from your project.', name, version)
+          projectId: options.project
+          design:
+            name: options.name
+            version: options.version
+        , (err) ->
+          return log.error('design:remove', err) if err
+          log.info('design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
 
 
 authenticate = (callback) ->
@@ -217,7 +224,6 @@ authenticate = (callback) ->
       user: config.user
       dir: config.dir # configdir
       configs: config.configs # existing configfiles
-
     alias:
       h: 'host'
       u: 'user'
@@ -233,21 +239,21 @@ authenticate = (callback) ->
       callback(null, {user, token, host: options.host})
 
 
-authenticateSpace = (callback) ->
-  args = minimist process.argv.slice(3),
-    string: ['space', 'name', 'version']
+authenticateProject = (callback) ->
+  c = minimist process.argv.splice(3),
+    string: ['project', 'name', 'version']
     alias:
-      s: 'space'
-      project: 'space'
+      s: 'project'
+      project: 'project'
       n: 'name'
-      v: 'version'
 
   authenticate (err, {user, token, host} = {}) ->
     return callback(err) if err
     callback null,
       user: user
       token: token
-      host: host
-      space: args.space || user.space_id
-      name: args.name
-      version: args.version
+      options:
+        host: host
+        project: c.project || user.project_id || user.space_id
+        name: c.name
+        version: c.version

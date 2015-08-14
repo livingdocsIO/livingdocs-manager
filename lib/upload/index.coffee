@@ -32,6 +32,7 @@ exports.exec = (options, callback) ->
 
   exports.putJson {design, token, host}, (err, {design, url}={}) ->
     return callback(err) if err
+
     exports.uploadAssets {cwd, host, token, design}, (err) ->
       return callback(err) if err
       callback(null, {design, url})

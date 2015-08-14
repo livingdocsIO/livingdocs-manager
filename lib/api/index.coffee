@@ -112,83 +112,75 @@ module.exports = api =
         callback(options)
 
 
-api.space =
-  get: (options, spaceId, callback) ->
+api.project =
+  get: (options, projectId, callback) ->
     request
       method: 'get'
-      url: "#{options.host}/spaces/#{spaceId}",
+      url: "#{options.host}/projects/#{projectId}",
       headers: Authorization: "Bearer #{options.token}"
       json: true
     , (err, res, body) ->
       return callback(err) if err
       return callback(api.requestError(res)) if res.statusCode != 200
-      callback(null, body.space)
+      log.verbose('api:project:get', response.toJSON())
+      callback(null, body.project)
 
-
-  listDesigns: (options, spaceId, callback) ->
-    api.space.get options, spaceId, (err, space) ->
+  listDesigns: (options, projectId, callback) ->
+    @get options, projectId, (err, project) ->
       return callback(err) if err
       callback null,
-        defaultDesign: space.config.default_design
-        designs: space.config.designs
+        defaultDesign: project.config.default_design
+        designs: project.config.designs
 
 
-  addDesign: (options, {spaceId, design} = {}, callback) ->
+  addDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
-    api.space.get options, spaceId, (err, space) ->
-      return callback(err) if err || !space
-
-      design =
+    request
+      method: 'post'
+      url: "#{options.host}/projects/#{projectId}/add-design",
+      headers: Authorization: "Bearer #{options.token}"
+      body:
         name: design.name
         version: design.version
-        url: options.host+"/designs/#{design.name}/#{design.version}"
-        is_selectable: true
-
-      identifiers = _.pick(design, 'name', 'version')
-      contained = _.find(space.config.designs, identifiers)
-      isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), identifiers)
-      if isDefault && contained
-        log.info('space:addDesign', 'This design is already set as default')
-        return callback(null, space)
-
-      space.config.designs ?= []
-      space.config.designs.push(design) if !contained
-      space.config.default_design = design
-      updateConfig(options, space, callback)
+      json: true
+    , (err, response, body) ->
+      return callback(err) if err
+      log.verbose('api:project:addDesign', 'Received error response')
+      log.verbose('api:project:addDesign', response.toJSON())
+      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
+      callback(null)
 
 
-  removeDesign: (options, {spaceId, design} = {}, callback) ->
+  removeDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
-    api.space.get options, spaceId, (err, space) ->
-      return callback(err) if err || !space
-
-      space.config.designs ?= []
-      contained = _.find(space.config.designs, design)
-      isDefault = _.isEqual(_.pick(space.config.default_design, 'name', 'version'), _.pick(design, 'name', 'version'))
-      if isDefault
-        return callback(new Error("Can't remove a default design. Please add a new one first."))
-
-      if !contained
-        log.info('space:removeDesign', "The space doesn't contain such a design")
-        return callback(null, space)
-
-      space.config.designs = _.reject(space.config.designs, design)
-      updateConfig(options, space, callback)
+    request
+      method: 'post'
+      url: "#{options.host}/projects/#{projectId}/remove-design",
+      headers: Authorization: "Bearer #{options.token}"
+      body:
+        name: design.name
+        version: design.version
+      json: true
+    , (err, response, body) ->
+      return callback(err) if err
+      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 200
+      callback(null)
 
 
 assertDesign = (design) ->
   assert(design.name, 'design.name is required')
-  assert(design.version, 'design.version is required')
+  assert(_.isString(design.version), 'design.version is required')
 
 
-updateConfig = (options, space, callback) ->
+updateConfig = (options, project, callback) ->
   request
     method: 'put'
-    url: "#{options.host}/spaces/#{space.id}/config",
+    url: "#{options.host}/projects/#{project.id}/config",
     headers: Authorization: "Bearer #{options.token}"
-    body: space.config
+    body: project.config
     json: true
   , (err, response, body) ->
     return callback(err) if err
-    return callback(api.requestError(response, space.config)) if response.statusCode != 201
-    callback(null, body.space)
+    return callback(api.requestError(response, project)) if response.statusCode != 201
+    return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 201
+    callback(null, body.project)

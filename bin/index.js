@@ -51,7 +51,7 @@
       " There's a %s update available:",
       " The newest version is %s",
       " You use version %s",
-      " Please run npm install -g livingdocs-manager`",
+      " Please run `npm install -g livingdocs-manager`",
       "--------------------------------------------------------",
       ""
     ].join('\n')  , notifier.update.type, notifier.update.latest, notifier.update.current)
