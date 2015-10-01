@@ -122,15 +122,15 @@ api.project =
     , (err, res, body) ->
       return callback(err) if err
       return callback(api.requestError(res)) if res.statusCode != 200
-      log.verbose('api:project:get', response.toJSON())
+      log.verbose('api:project:get', res.toJSON())
       callback(null, body.project)
 
   listDesigns: (options, projectId, callback) ->
     @get options, projectId, (err, project) ->
       return callback(err) if err
       callback null,
-        defaultDesign: project.config.default_design
-        designs: project.config.designs
+        defaultDesign: project.default_design
+        designs: project.designs
 
 
   addDesign: (options, {projectId, design} = {}, callback) ->
@@ -143,11 +143,11 @@ api.project =
         name: design.name
         version: design.version
       json: true
-    , (err, response, body) ->
+    , (err, res, body) ->
       return callback(err) if err
-      log.verbose('api:project:addDesign', 'Received error response')
-      log.verbose('api:project:addDesign', response.toJSON())
-      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
+      log.verbose('api:project:addDesign', 'Received error res')
+      log.verbose('api:project:addDesign', res.toJSON())
+      return callback(new Error("Invalid statusCode #{res.statusCode}")) if res.statusCode != 204
       callback(null)
 
 
@@ -161,26 +161,12 @@ api.project =
         name: design.name
         version: design.version
       json: true
-    , (err, response, body) ->
+    , (err, res, body) ->
       return callback(err) if err
-      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 200
+      return callback(new Error("Invalid statusCode #{res.statusCode}")) if res.statusCode != 204
       callback(null)
 
 
 assertDesign = (design) ->
   assert(design.name, 'design.name is required')
   assert(_.isString(design.version), 'design.version is required')
-
-
-updateConfig = (options, project, callback) ->
-  request
-    method: 'put'
-    url: "#{options.host}/projects/#{project.id}/config",
-    headers: Authorization: "Bearer #{options.token}"
-    body: project.config
-    json: true
-  , (err, response, body) ->
-    return callback(err) if err
-    return callback(api.requestError(response, project)) if response.statusCode != 201
-    return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 201
-    callback(null, body.project)
