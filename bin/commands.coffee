@@ -198,11 +198,47 @@ commands =
           log.info('project:design:add', "The design '#{options.name}@#{options.version}' is now linked to your project.")
 
 
+  'project:design:disable':
+    description: "Disable project's design"
+    exec: ->
+      authenticateProject (err, {options, user, token} = {}) ->
+        return log.error('project:design:disable', err) if err
+        api.project.disableDesign
+          host: options.host
+          token: token
+        ,
+          projectId: options.project
+          design:
+            name: options.name
+            version: options.version
+        , (err) ->
+          return log.error('project:design:disable', err) if err
+          log.info('project:design:disable', "The design '#{options.name}@#{options.version}' is now disabled for your project.")
+
+
+  'project:design:enable':
+    description: "Enable project's design"
+    exec: ->
+      authenticateProject (err, {options, user, token} = {}) ->
+        return log.error('project:design:enable', err) if err
+        api.project.enableDesign
+          host: options.host
+          token: token
+        ,
+          projectId: options.project
+          design:
+            name: options.name
+            version: options.version
+        , (err) ->
+          return log.error('project:design:enable', err) if err
+          log.info('project:design:enable', "The design '#{options.name}@#{options.version}' is now enabled for your project.")
+
+
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: ->
       authenticateProject (err, {options, user, token} = {}) ->
-        return log.error(err) if err
+        return log.error('project:design:remove', err) if err
         api.project.removeDesign
           host: options.host
           token: token
@@ -213,7 +249,7 @@ commands =
             version: options.version
         , (err) ->
           return log.error('design:remove', err) if err
-          log.info('design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
+          log.info('project:design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
 
 
 authenticate = (callback) ->

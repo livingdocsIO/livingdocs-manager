@@ -151,6 +151,42 @@ api.project =
       callback(null)
 
 
+  disableDesign: (options, {projectId, design} = {}, callback) ->
+    assertDesign(design)
+    request
+      method: 'post'
+      url: "#{options.host}/projects/#{projectId}/disable-design",
+      headers: Authorization: "Bearer #{options.token}"
+      body:
+        name: design.name
+        version: design.version
+      json: true
+    , (err, response, body) ->
+      return callback(err) if err
+      log.verbose('api:project:disableDesign', 'Received error response')
+      log.verbose('api:project:disableDesign', response.toJSON())
+      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
+      callback(null)
+
+
+  enableDesign: (options, {projectId, design} = {}, callback) ->
+    assertDesign(design)
+    request
+      method: 'post'
+      url: "#{options.host}/projects/#{projectId}/enable-design",
+      headers: Authorization: "Bearer #{options.token}"
+      body:
+        name: design.name
+        version: design.version
+      json: true
+    , (err, response, body) ->
+      return callback(err) if err
+      log.verbose('api:project:enableDesign', 'Received error response')
+      log.verbose('api:project:enableDesign', response.toJSON())
+      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
+      callback(null)
+
+
   removeDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
     request
