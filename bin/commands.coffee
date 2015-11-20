@@ -206,22 +206,6 @@ commands =
       message: "The design {{design}} is now linked to your project."
 
 
-  'project:design:disable':
-    description: "Disable project's design"
-    exec: execAction
-      method: 'disableDesign'
-      identifier: 'disable'
-      message: "The design {{design}} is now disabled for your project."
-
-
-  'project:design:enable':
-    description: "Enable project's design"
-    exec: execAction
-      method: 'enableDesign'
-      identifier: 'enable'
-      message: "The design {{design}} is now enabled for your project."
-
-
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: execAction
@@ -236,6 +220,22 @@ commands =
       method: 'setDefaultDesign'
       identifier: 'default'
       message: "The design {{design}} is now set as default."
+
+
+  'project:design:enable':
+    description: "Enable project's design"
+    exec: execAction
+      method: 'enableDesign'
+      identifier: 'enable'
+      message: "The design {{design}} is now enabled for your project."
+
+
+  'project:design:disable':
+    description: "Disable project's design"
+    exec: execAction
+      method: 'disableDesign'
+      identifier: 'disable'
+      message: "The design {{design}} is now disabled for your project."
 
 
 authenticate = (callback) ->
