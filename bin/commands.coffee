@@ -116,7 +116,7 @@ commands =
 
 
       args.source ?= args._[0] || process.cwd()
-      authenticate (err, {user, token, host} = {}) ->
+      authenticate (err, {token, host} = {}) ->
         return log.error('design:publish', 'Failed to authenticate', err) if err
         upload = require('../lib/upload')
         upload.exec
@@ -167,7 +167,7 @@ commands =
   'project:design:list':
     description: 'List all designs of a project'
     exec: ->
-      authenticateProject (err, {options, user, token} = {}) ->
+      authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:list', err) if err
         api.project.listDesigns
           host: options.host
@@ -183,7 +183,7 @@ commands =
   'project:design:add':
     description: 'Add a design to a project'
     exec: ->
-      authenticateProject (err, {options, user, token} = {}) ->
+      authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:add', err) if err
         api.project.addDesign
           host: options.host
@@ -201,7 +201,7 @@ commands =
   'project:design:disable':
     description: "Disable project's design"
     exec: ->
-      authenticateProject (err, {options, user, token} = {}) ->
+      authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:disable', err) if err
         api.project.disableDesign
           host: options.host
@@ -219,7 +219,7 @@ commands =
   'project:design:enable':
     description: "Enable project's design"
     exec: ->
-      authenticateProject (err, {options, user, token} = {}) ->
+      authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:enable', err) if err
         api.project.enableDesign
           host: options.host
@@ -237,7 +237,7 @@ commands =
   'project:design:remove':
     description: 'Remove a design from a project'
     exec: ->
-      authenticateProject (err, {options, user, token} = {}) ->
+      authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:remove', err) if err
         api.project.removeDesign
           host: options.host
@@ -286,7 +286,6 @@ authenticateProject = (callback) ->
   authenticate (err, {user, token, host} = {}) ->
     return callback(err) if err
     callback null,
-      user: user
       token: token
       options:
         host: host
