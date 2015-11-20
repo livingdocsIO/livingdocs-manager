@@ -8,6 +8,24 @@ minimist = require('minimist')
 print = require('../lib/print')
 config = require('./config')
 
+
+execAction = ({identifier, method, message}) ->
+  ->
+    authenticateProject (err, {options, token} = {}) ->
+      return log.error("project:design:#{identifier}", err) if err
+      api.project[method]
+        host: options.host
+        token: token
+      ,
+        projectId: options.project
+        design:
+          name: options.name
+          version: options.version
+      , (err) ->
+        return log.error("project:design:#{identifier}", err) if err
+        log.info("project:design:#{identifier}", message.replace('{{design}}', "#{options.name}@#{options.version}"))
+
+
 exports.init = (callback) ->
   callback()
 
@@ -182,74 +200,34 @@ commands =
 
   'project:design:add':
     description: 'Add a design to a project'
-    exec: ->
-      authenticateProject (err, {options, token} = {}) ->
-        return log.error('project:design:add', err) if err
-        api.project.addDesign
-          host: options.host
-          token: token
-        ,
-          projectId: options.project
-          design:
-            name: options.name
-            version: options.version
-        , (err) ->
-          return log.error('project:design:add', err) if err
-          log.info('project:design:add', "The design '#{options.name}@#{options.version}' is now linked to your project.")
+    exec: execAction
+      method: 'addDesign'
+      identifier: 'add'
+      message: "The design {{design}} is now linked to your project."
 
 
   'project:design:disable':
     description: "Disable project's design"
-    exec: ->
-      authenticateProject (err, {options, token} = {}) ->
-        return log.error('project:design:disable', err) if err
-        api.project.disableDesign
-          host: options.host
-          token: token
-        ,
-          projectId: options.project
-          design:
-            name: options.name
-            version: options.version
-        , (err) ->
-          return log.error('project:design:disable', err) if err
-          log.info('project:design:disable', "The design '#{options.name}@#{options.version}' is now disabled for your project.")
+    exec: execAction
+      method: 'disableDesign'
+      identifier: 'disable'
+      message: "The design {{design}} is now disabled for your project."
 
 
   'project:design:enable':
     description: "Enable project's design"
-    exec: ->
-      authenticateProject (err, {options, token} = {}) ->
-        return log.error('project:design:enable', err) if err
-        api.project.enableDesign
-          host: options.host
-          token: token
-        ,
-          projectId: options.project
-          design:
-            name: options.name
-            version: options.version
-        , (err) ->
-          return log.error('project:design:enable', err) if err
-          log.info('project:design:enable', "The design '#{options.name}@#{options.version}' is now enabled for your project.")
+    exec: execAction
+      method: 'enableDesign'
+      identifier: 'enable'
+      message: "The design {{design}} is now enabled for your project."
 
 
   'project:design:remove':
     description: 'Remove a design from a project'
-    exec: ->
-      authenticateProject (err, {options, token} = {}) ->
-        return log.error('project:design:remove', err) if err
-        api.project.removeDesign
-          host: options.host
-          token: token
-        ,
-          projectId: options.project
-          design:
-            name: options.name
-            version: options.version
-        , (err) ->
-          return log.error('design:remove', err) if err
-          log.info('project:design:remove', "The design '#{options.name}@#{options.version}' got removed from your project.")
+    exec: execAction
+      method: 'removeDesign'
+      identifier: 'remove'
+      message: "The design {{design}} got removed from your project."
 
 
 authenticate = (callback) ->
