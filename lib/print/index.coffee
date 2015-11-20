@@ -23,7 +23,11 @@ print.each = (arr, method) ->
 
 
 print.design = (design) ->
-  console.log("#{design?.name}@#{design?.version}")
+  identifier = "#{design?.name}@#{design?.version}"
+  postfix = ''
+  postfix += ' - not selectable' if design.is_selectable == false
+  postfix += ' - disabled' if design.is_disabled == true
+  console.log(identifier + postfix)
   print
 
 
