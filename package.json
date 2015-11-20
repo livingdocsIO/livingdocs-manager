@@ -1,6 +1,6 @@
 {
   "name": "livingdocs-manager",
-  "version": "2.2.12",
+  "version": "2.3.0",
   "main": "index.js",
   "bin": {
     "livingdocs-manager": "./bin/index.js",
