@@ -230,6 +230,14 @@ commands =
       message: "The design {{design}} got removed from your project."
 
 
+  'project:design:default':
+    description: 'Set a design as default'
+    exec: execAction
+      method: 'setDefaultDesign'
+      identifier: 'default'
+      message: "The design {{design}} is now set as default."
+
+
 authenticate = (callback) ->
   defaults = minimist process.argv.slice(3),
     string: ['user', 'password', 'host']

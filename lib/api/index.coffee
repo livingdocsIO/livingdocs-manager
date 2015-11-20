@@ -157,6 +157,11 @@ api.project =
     postAction('remove-design', {projectId, design}, options, callback)
 
 
+  setDefaultDesign: (options, {projectId, design} = {}, callback) ->
+    assertDesign(design)
+    postAction('set-default-design', {projectId, design}, options, callback)
+
+
 postAction = (action, {projectId, design}, options, callback) ->
   request
     method: 'post'
