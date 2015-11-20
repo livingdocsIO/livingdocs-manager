@@ -8,7 +8,7 @@ rc = require('rc')
 mkdirp = require('mkdirp')
 
 module.exports = api =
-  requestError: (res, body, message) ->
+  requestError: (res, requestBody, message) ->
     if !message && res.statusCode == 400 && res.body?.error_details
       message = 'Server validation Error:\n'
       message += "#{key}: #{msg}\n" for key, msg of res.body.error_details
@@ -24,8 +24,8 @@ module.exports = api =
       method: res.request.method
       headers: res.request.headers
 
-    if body
-      err.request.body = body
+    if requestBody
+      err.request.body = requestBody
 
     err.response = res.toJSON()
     delete err.response.request
@@ -56,7 +56,11 @@ module.exports = api =
 
       else if res?.statusCode != 200
         error = new Error("Authentication: #{body.error}")
-        body = username: options.username, password: '[redacted]'
+        body =
+          host: options.host
+          username: options.username
+          password: '[redacted]'
+
         callback(api.requestError(res, body, "Authentication failed"))
 
       else
@@ -122,7 +126,7 @@ api.project =
     , (err, res, body) ->
       return callback(err) if err
       return callback(api.requestError(res)) if res.statusCode != 200
-      log.verbose('api:project:get', res.toJSON())
+      log.verbose('api:project:get', api.requestError(res))
       callback(null, body.project)
 
   listDesigns: (options, projectId, callback) ->
@@ -135,72 +139,40 @@ api.project =
 
   addDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
-    request
-      method: 'post'
-      url: "#{options.host}/projects/#{projectId}/add-design",
-      headers: Authorization: "Bearer #{options.token}"
-      body:
-        name: design.name
-        version: design.version
-      json: true
-    , (err, res, body) ->
-      return callback(err) if err
-      log.verbose('api:project:addDesign', 'Received error res')
-      log.verbose('api:project:addDesign', res.toJSON())
-      return callback(new Error("Invalid statusCode #{res.statusCode}")) if res.statusCode != 204
-      callback(null)
+    postAction('add-design', {projectId, design}, options, callback)
 
 
   disableDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
-    request
-      method: 'post'
-      url: "#{options.host}/projects/#{projectId}/disable-design",
-      headers: Authorization: "Bearer #{options.token}"
-      body:
-        name: design.name
-        version: design.version
-      json: true
-    , (err, response, body) ->
-      return callback(err) if err
-      log.verbose('api:project:disableDesign', 'Received error response')
-      log.verbose('api:project:disableDesign', response.toJSON())
-      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
-      callback(null)
+    postAction('disable-design', {projectId, design}, options, callback)
 
 
   enableDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
-    request
-      method: 'post'
-      url: "#{options.host}/projects/#{projectId}/enable-design",
-      headers: Authorization: "Bearer #{options.token}"
-      body:
-        name: design.name
-        version: design.version
-      json: true
-    , (err, response, body) ->
-      return callback(err) if err
-      log.verbose('api:project:enableDesign', 'Received error response')
-      log.verbose('api:project:enableDesign', response.toJSON())
-      return callback(new Error("Invalid statusCode #{response.statusCode}")) if response.statusCode != 204
-      callback(null)
+    postAction('enable-design', {projectId, design}, options, callback)
 
 
   removeDesign: (options, {projectId, design} = {}, callback) ->
     assertDesign(design)
-    request
-      method: 'post'
-      url: "#{options.host}/projects/#{projectId}/remove-design",
-      headers: Authorization: "Bearer #{options.token}"
-      body:
-        name: design.name
-        version: design.version
-      json: true
-    , (err, res, body) ->
-      return callback(err) if err
-      return callback(new Error("Invalid statusCode #{res.statusCode}")) if res.statusCode != 204
-      callback(null)
+    postAction('remove-design', {projectId, design}, options, callback)
+
+
+postAction = (action, {projectId, design}, options, callback) ->
+  request
+    method: 'post'
+    url: "#{options.host}/projects/#{projectId}/#{action}",
+    headers: Authorization: "Bearer #{options.token}"
+    body: design
+    json: true
+  , (err, res, body) ->
+    if res?.statusCode == 204
+      return callback(null)
+
+    log.verbose("api:project:#{action}", api.requestError(res))
+    if err
+      return callback(err)
+    else
+      callback(api.requestError(res, "Invalid statusCode #{res.statusCode}"))
 
 
 assertDesign = (design) ->
