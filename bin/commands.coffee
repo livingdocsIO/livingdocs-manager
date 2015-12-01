@@ -262,7 +262,7 @@ authenticate = (callback) ->
 
 
 authenticateProject = (callback) ->
-  c = minimist process.argv.splice(3),
+  c = minimist process.argv.slice(3),
     string: ['project', 'name', 'version']
     alias:
       s: 'project'
