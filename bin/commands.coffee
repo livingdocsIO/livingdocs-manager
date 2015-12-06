@@ -2,8 +2,6 @@ log = require('npmlog')
 path = require('path')
 _ = require('lodash')
 pkg = require('../package.json')
-Design = require('../')
-api = require('../lib/api')
 minimist = require('minimist')
 print = require('../lib/print')
 config = require('./config')
@@ -13,6 +11,7 @@ execAction = ({identifier, method, message}) ->
   ->
     authenticateProject (err, {options, token} = {}) ->
       return log.error("project:design:#{identifier}", err) if err
+      api = require('../lib/api')
       api.project[method]
         host: options.host
         token: token
@@ -101,6 +100,7 @@ commands =
       args.destination = args._[1] || process.cwd()
 
       error = null
+      Design = require('../')
       Design.build(src: args.source, dest: args.destination)
       .on 'debug', (debug) ->
         log.verbose('build', debug)
@@ -192,6 +192,7 @@ commands =
     exec: ->
       authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:list', err) if err
+        api = require('../lib/api')
         api.project.listDesigns
           host: options.host
           token: token
@@ -256,6 +257,7 @@ authenticate = (callback) ->
       u: 'user'
       p: 'password'
 
+  api = require('../lib/api')
   api.askAuthenticationOptions defaults, (options) ->
     api.authenticate
       host: options.host
