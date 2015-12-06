@@ -58,7 +58,10 @@ exports.start = (options, callback) ->
 
       serveAsset = (name, version) ->
         (req, res) ->
-          res.sendStatus(404)
+          filePath = path.join(options.devDirectory, req.params.file)
+          stream = fs.createReadStream(filePath)
+          contentType = mime.lookup(filePath)
+          sendFile(res)(null, {stream, contentType})
 
       try
         designPath = path.join(options.devDirectory, 'config')
