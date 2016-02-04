@@ -3,7 +3,7 @@ fs = require('fs')
 assert = require('assert')
 log = require('npmlog')
 _ = require('lodash')
-request = require('request')
+request = require('../request')
 rc = require('rc')
 mkdirp = require('mkdirp')
 

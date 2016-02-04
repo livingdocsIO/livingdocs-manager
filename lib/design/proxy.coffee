@@ -114,7 +114,7 @@ getDesignStream = (options, callback) ->
     tarUrl = "#{options.host}/designs/#{options.name}/#{options.version}.tar.gz"
     log.verbose('design:proxy', "Fetching '#{tarUrl}'")
 
-    request.get(tarUrl)
+    request(method: 'get', url: tarUrl)
     .on 'error', (err) ->
       log.error('design:proxy', "Failed to fetch '#{tarUrl}'")
       callback(err)
