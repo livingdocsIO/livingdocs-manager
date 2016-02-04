@@ -6,6 +6,9 @@
     "livingdocs-manager": "./bin/index.js",
     "ldm": "./bin/index.js"
   },
+  "scripts": {
+    "postversion": "npm publish"
+  },
   "author": "Marc Bachmann <marc@upfront.io>",
   "license": "LGPL3",
   "dependencies": {
