@@ -3,21 +3,25 @@ fs = require('fs')
 assert = require('assert')
 log = require('npmlog')
 _ = require('lodash')
-request = require('request')
+request = require('../request')
 rc = require('rc')
 mkdirp = require('mkdirp')
 
 module.exports = api =
   requestError: (res, requestBody, message) ->
-    if !message && res.statusCode == 400 && res.body?.error_details
-      message = 'Server validation Error:\n'
-      message += "#{key}: #{msg}\n" for key, msg of res.body.error_details
-      err = new Error(message)
-      err.stack = undefined
+    if res.statusCode == 400
+      message = "#{message || 'Server validation Error'}:\n"
 
     else
-      err = new Error(message || "Unhandled response code #{res.statusCode}")
+      message = "#{message || 'Unhandled response code '+res.statusCode}:\n"
 
+    postfix = ''
+    if res.body?.error_details
+      postfix += "#{key}: #{msg}\n" for key, msg of res.body.error_details
+      postfix = '    '+postfix.split('\n').join('\n    ')
+
+    err = new Error(message+postfix)
+    delete err.stack
     err.status = res.statusCode
     err.request =
       url: res.request.uri.href
@@ -28,7 +32,9 @@ module.exports = api =
       err.request.body = requestBody
 
     err.response = res.toJSON()
+    # err.body = err.response.body
     delete err.response.request
+    # delete err.response.body
 
     err
 
@@ -177,7 +183,7 @@ postAction = (action, {projectId, design}, options, callback) ->
     if err
       return callback(err)
     else
-      callback(api.requestError(res, "Invalid statusCode #{res.statusCode}"))
+      callback(api.requestError(res, null, "Unhandled error"))
 
 
 assertDesign = (design) ->
