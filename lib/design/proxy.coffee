@@ -54,7 +54,7 @@ exports.start = (options, callback) ->
           sendFile(res)(err)
 
         else if !stream
-          log.info('design:proxy', "Could not find the file '#{file}' in the design '#{name}@#{version}'") unless stream
+          log.info('design:proxy', "Could not find the file 'package.json' in the design '#{name}@#{version}'") unless stream
           sendFile(res)()
 
         else
@@ -121,12 +121,14 @@ getDesignStream = (options, callback) ->
 
     .on 'response', (res) ->
       if res.statusCode != 200
-        log.error('design:proxy', "Failed to fetch '#{tarUrl}'. Received statusCode #{res.statusCode}")
-        callback()
+        msg = "Failed to fetch '#{tarUrl}'. Received statusCode #{res.statusCode}"
+        log.error('design:proxy', msg)
+        callback(new Error(msg))
 
       else if !_.contains(res.headers, 'gzip')
-        log.error('design:proxy', "Failed to fetch '#{tarUrl}'. Did not receive a Tar archive.")
-        callback()
+        msg = "Failed to fetch '#{tarUrl}'. Did not receive a tar archive."
+        log.error('design:proxy', msg)
+        callback(new Error(msg))
 
       else
         write = fs.createWriteStream(tmpFilePath)
