@@ -1,5 +1,7 @@
 # Livingdocs Manager - ldm
 
+A cli to manage designs and the configuration of a livingdocs server.
+
 ## Installation
 
 ```
@@ -42,3 +44,12 @@ cd ~/Development/livingdocs-design
 ldm design:build ./src ./dist
 ldm design:publish ./dist
 ```
+
+
+## To release a new version of this module
+
+You can run
+```
+npm version [major|minor|patch]
+```
+
