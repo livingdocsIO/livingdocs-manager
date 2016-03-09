@@ -269,6 +269,9 @@ authenticateProject = (callback) ->
       project: 'project'
       n: 'name'
 
+  if Array.isArray(c.project)
+    c.project = c.project.pop()
+
   authenticate (err, {user, token, host} = {}) ->
     return callback(err) if err
     callback null,
