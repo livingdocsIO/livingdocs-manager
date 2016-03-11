@@ -22,12 +22,15 @@ print.each = (arr, method) ->
   print
 
 
-print.design = (design) ->
-  identifier = "#{design?.name}@#{design?.version}"
-  postfix = ''
-  postfix += ' - not selectable' if design.is_selectable == false
-  postfix += ' - disabled' if design.is_disabled == true
-  console.log(identifier + postfix)
+print.channel = (channel) ->
+  print
+    .line "#{channel.name}"
+    .line '  channel id', channel.id
+    .line '  design name', channel.design_name
+    .line '  current version', channel.current_version
+    .line '  available versions', channel.available_versions.toString()
+    .line '  disabled versions', channel.disabled_versions.toString()
+    .line ''
   print
 
 

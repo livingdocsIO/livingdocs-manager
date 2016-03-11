@@ -9,21 +9,19 @@ print = require('../lib/print')
 config = require('./config')
 
 
-execAction = ({identifier, method, message}) ->
+execChannelAction = ({identifier, method, message}) ->
   ->
     authenticateProject (err, {options, token} = {}) ->
-      return log.error("project:design:#{identifier}", err) if err
+      return log.error("channel:design-version:#{identifier}", err) if err
       api.project[method]
         host: options.host
         token: token
       ,
-        projectId: options.project
-        design:
-          name: options.name
-          version: options.version
+        channelId: options.channel
+        designVersion: options['version']
       , (err) ->
-        return log.error("project:design:#{identifier}", err) if err
-        log.info("project:design:#{identifier}", message.replace('{{design}}', "#{options.name}@#{options.version}"))
+        return log.error("channel:design-version:#{identifier}", err) if err
+        log.info("channel:design-version:#{identifier}", message.replace('{{design}}', "#{options.version}"))
 
 
 exports.init = (callback) ->
@@ -58,7 +56,7 @@ commands =
         return unless command?.description
         topic = key.split(':')?[0]
         print.line() if topic != previousTopic
-        print.line("  #{_.padRight(key, 30)}#  #{command.description}")
+        print.line("  #{_.padRight(key, 35)}#  #{command.description}")
         previousTopic = topic
 
 
@@ -182,8 +180,8 @@ commands =
   # project:design:default     Set a design to a default
   # project:design:deprecate   Prevent document creation with a specific design version
 
-  'project:design:list':
-    description: 'List all designs of a project'
+  'project:channel:list':
+    description: 'List all channels of a project'
     exec: ->
       authenticateProject (err, {options, token} = {}) ->
         return log.error('project:design:list', err) if err
@@ -192,50 +190,54 @@ commands =
           token: token
         ,
           options.project
-        , (err, {defaultDesign, designs} = {}) ->
+        , (err, {channels, defaultChannel} = {}) ->
           return log.error('project:design:list', err) if err
-          print.topic('Default design').design(defaultDesign)()
-          print.topic('Designs').each(designs, print.design)()
+          print
+            .topic('Default Channel Name')
+            .line(defaultChannel.name)()
+          print
+            .topic('Channels')
+            .each(channels, print.channel)()
 
 
-  'project:design:add':
-    description: 'Add a design to a project'
-    exec: execAction
-      method: 'addDesign'
+  'channel:design-version:add':
+    description: 'Add a design-version to a channel'
+    exec: execChannelAction
+      method: 'addDesignVersion'
       identifier: 'add'
-      message: "The design {{design}} is now linked to your project."
+      message: 'The designVersion {{design}} is now linked to your channel.'
 
 
-  'project:design:remove':
-    description: 'Remove a design from a project'
-    exec: execAction
-      method: 'removeDesign'
+  'channel:design-version:remove':
+    description: 'Remove a design-version from a channel'
+    exec: execChannelAction
+      method: 'removeDesignVersion'
       identifier: 'remove'
-      message: "The design {{design}} got removed from your project."
+      message: 'The designVersion {{design}} got removed from your channel.'
 
 
-  'project:design:default':
-    description: 'Set a design as default'
-    exec: execAction
-      method: 'setDefaultDesign'
-      identifier: 'default'
-      message: "The design {{design}} is now set as default."
+  'channel:design-version:current':
+    description: 'Set the current design-version for a channel'
+    exec: execChannelAction
+      method: 'setCurrentDesignVersion'
+      identifier: 'current'
+      message: 'The new current designVersion is {{design}}.'
 
 
-  'project:design:enable':
-    description: "Enable project's design"
-    exec: execAction
-      method: 'enableDesign'
+  'channel:design-version:enable':
+    description: "Enable a design-version of a channel"
+    exec: execChannelAction
+      method: 'enableDesignVersion'
       identifier: 'enable'
-      message: "The design {{design}} is now enabled for your project."
+      message: 'The designVersion {{design}} is now enabled for your channel.'
 
 
-  'project:design:disable':
-    description: "Disable project's design"
-    exec: execAction
-      method: 'disableDesign'
+  'channel:design-version:disable':
+    description: "Disable a design-version of a channel"
+    exec: execChannelAction
+      method: 'disableDesignVersion'
       identifier: 'disable'
-      message: "The design {{design}} is now disabled for your project."
+      message: 'The designVersion {{design}} is now disabled for your channel.'
 
 
 authenticate = (callback) ->
@@ -279,5 +281,6 @@ authenticateProject = (callback) ->
       options:
         host: host
         project: c.project || user.project_id || user.space_id
+        channel: c.channel
         name: c.name
         version: c.version

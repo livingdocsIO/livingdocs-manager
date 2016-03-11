@@ -67,7 +67,7 @@ module.exports = api =
           username: options.username
           password: '[redacted]'
 
-        callback(api.requestError(res, body, "Authentication failed"))
+        callback(api.requestError(res, body, 'Authentication failed'))
 
       else
         callback null,
@@ -135,57 +135,58 @@ api.project =
       log.verbose('api:project:get', api.requestError(res))
       callback(null, body.project)
 
+
   listDesigns: (options, projectId, callback) ->
     @get options, projectId, (err, project) ->
       return callback(err) if err
       callback null,
-        defaultDesign: project.default_design
-        designs: project.designs
+        channels: project.channels
+        defaultChannel: project.default_channel
 
 
-  addDesign: (options, {projectId, design} = {}, callback) ->
-    assertDesign(design)
-    postAction('add-design', {projectId, design}, options, callback)
+  addDesignVersion: (options, {channelId, designVersion} = {}, callback) ->
+    assertDesignVersion(designVersion)
+    channelPostAction('add-design-version', {channelId, designVersion}, options, callback)
 
 
-  disableDesign: (options, {projectId, design} = {}, callback) ->
-    assertDesign(design)
-    postAction('disable-design', {projectId, design}, options, callback)
+  disableDesignVersion: (options, {channelId, designVersion} = {}, callback) ->
+    assertDesignVersion(designVersion)
+    channelPostAction('disable-design-version', {channelId, designVersion}, options, callback)
 
 
-  enableDesign: (options, {projectId, design} = {}, callback) ->
-    assertDesign(design)
-    postAction('enable-design', {projectId, design}, options, callback)
+  enableDesignVersion: (options, {channelId, designVersion} = {}, callback) ->
+    assertDesignVersion(designVersion)
+    channelPostAction('enable-design-version', {channelId, designVersion}, options, callback)
 
 
-  removeDesign: (options, {projectId, design} = {}, callback) ->
-    assertDesign(design)
-    postAction('remove-design', {projectId, design}, options, callback)
+  removeDesignVersion: (options, {channelId, designVersion} = {}, callback) ->
+    assertDesignVersion(designVersion)
+    channelPostAction('remove-design-version', {channelId, designVersion}, options, callback)
 
 
-  setDefaultDesign: (options, {projectId, design} = {}, callback) ->
-    assertDesign(design)
-    postAction('set-default-design', {projectId, design}, options, callback)
+  setCurrentDesignVersion: (options, {channelId, designVersion} = {}, callback) ->
+    assertDesignVersion(designVersion)
+    channelPostAction('set-current-design-version', {channelId, designVersion}, options, callback)
 
 
-postAction = (action, {projectId, design}, options, callback) ->
+channelPostAction = (action, {channelId, designVersion}, options, callback) ->
   request
     method: 'post'
-    url: "#{options.host}/projects/#{projectId}/#{action}",
+    url: "#{options.host}/channels/#{channelId}/#{action}",
     headers: Authorization: "Bearer #{options.token}"
-    body: design
+    body:
+      design_version: designVersion
     json: true
   , (err, res, body) ->
     if res?.statusCode == 204
       return callback(null)
 
-    log.verbose("api:project:#{action}", api.requestError(res))
+    log.verbose("api:channels:#{action}", api.requestError(res))
     if err
       return callback(err)
     else
-      callback(api.requestError(res, null, "Unhandled error"))
+      callback(api.requestError(res, null, 'Unhandled error'))
 
 
-assertDesign = (design) ->
-  assert(design.name, 'design.name is required')
-  assert(_.isString(design.version), 'design.version is required')
+assertDesignVersion = (designVersion) ->
+  assert(_.isString(designVersion), 'designVersion is required')

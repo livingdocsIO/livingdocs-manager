@@ -18,22 +18,23 @@ Usage: ldm <command>
 
 where: <command> is one of:
 
-  help                          #  Show this information
+  help                              #  Show this information
 
-  version                       #  Show the cli version
+  version                           #  Show the cli version
 
-  user:info                     #  Prints the user information
+  user:info                         #  Prints the user information
 
-  design:build                  #  Compile the design
-  design:publish                #  Show the script version
-  design:proxy                  #  Start a design server that caches designs
+  design:build                      #  Compile the design
+  design:publish                    #  Show the script version
+  design:proxy                      #  Start a design server that caches designs
 
-  project:design:list           #  List all designs of a project
-  project:design:add            #  Add a design to a project
-  project:design:remove         #  Remove a design from a project
-  project:design:default        #  Set a design as default
-  project:design:enable         #  Enable project's design
-  project:design:disable        #  Disable project's design
+  project:channel:list              #  List all designs of all channels of a project
+
+  channel:design-version:add        #  Add a design version to a channel
+  channel:design-version:remove     #  Remove a design version from a channel
+  channel:design-version:current    #  Set a current design version as default of a channel
+  channel:design-version:enable     #  Enable a design version of a channel
+  channel:design-version:disable    #  Disable a design version of a channel
 ```
 
 
