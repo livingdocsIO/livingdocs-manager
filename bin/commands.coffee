@@ -130,8 +130,7 @@ commands =
         string: ['source']
         alias: s: 'source', src: 'source'
 
-
-      args.source ?= args._[0] || process.cwd()
+      args.source = path.resolve(args.source || args._[0] || './')
       authenticate (err, {token, host} = {}) ->
         return log.error('design:publish', 'Failed to authenticate', err) if err
         upload = require('../lib/upload')
