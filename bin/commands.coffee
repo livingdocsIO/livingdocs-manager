@@ -193,7 +193,7 @@ commands =
           return log.error('project:design:list', err) if err
           print
             .topic('Default Channel Name')
-            .line(defaultChannel.name)()
+            .line(defaultChannel?.name)()
           print
             .topic('Channels')
             .each(channels, print.channel)()
