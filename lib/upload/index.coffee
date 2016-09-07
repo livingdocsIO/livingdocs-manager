@@ -19,7 +19,7 @@ validateDesign = (design) ->
 
 # upload to the ☁️
 exports.exec = (options, callback) ->
-  {cwd, token, host} = options || {}
+  {cwd, token, host, forceUpdate} = options || {}
 
   try
     assert(typeof cwd is 'string', "The parameter 'options.cwd' is required")
@@ -30,7 +30,7 @@ exports.exec = (options, callback) ->
   catch err
     return callback(err)
 
-  exports.putJson {design, token, host}, (err, {design, url}={}) ->
+  exports.putJson {design, token, host, forceUpdate}, (err, {design, url}={}) ->
     return callback(err) if err
 
     exports.uploadAssets {cwd, host, token, design}, (err) ->
@@ -38,9 +38,11 @@ exports.exec = (options, callback) ->
       callback(null, {design, url})
 
 
-exports.putJson = ({design, host, token}, callback) ->
+exports.putJson = ({design, host, token, forceUpdate}, callback) ->
   log.verbose('design:publish', "Uploading the design %s@%s to %s", design.name, design.version, host)
   designUrl = host+"/designs/#{design.name}/#{design.version}"
+  if forceUpdate
+    designUrl = "#{designUrl}?force=true"
   request
     method: 'put'
     url: designUrl
