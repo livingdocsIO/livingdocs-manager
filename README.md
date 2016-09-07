@@ -46,6 +46,11 @@ ldm design:build ./src ./dist
 ldm design:publish ./dist
 ```
 
+### Force update an existing design
+```
+ldm design:publish ./dist --force
+```
+
 
 ## To release a new version of this module
 
