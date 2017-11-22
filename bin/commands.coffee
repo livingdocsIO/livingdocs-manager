@@ -138,7 +138,7 @@ commands =
           host: host
           token: token
           cwd: args.source
-          forceUpdate: args.force
+          forceUpdate: args.force || args.f
         , (err, {design, url} = {}) ->
           if err?.code == 'ENOENT'
             log.error('design:publish', 'No design.json file found in %s', args.source)
