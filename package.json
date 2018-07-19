@@ -36,10 +36,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/upfrontIO/livingdocs-manager.git"
+    "url": "https://github.com/livingdocsIO/livingdocs-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/upfrontIO/livingdocs-manager/issues"
+    "url": "https://github.com/livingdocsIO/livingdocs-manager/issues"
   },
-  "homepage": "https://github.com/upfrontIO/livingdocs-manager"
+  "homepage": "https://github.com/livingdocsIO/livingdocs-manager"
 }
