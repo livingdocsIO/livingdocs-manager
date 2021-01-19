@@ -1,6 +1,6 @@
 {
   "name": "livingdocs-manager",
-  "version": "4.1.6",
+  "version": "5.0.0",
   "description": "A cli to manage designs and the configuration of a livingdocs server.",
   "main": "index.js",
   "bin": {
