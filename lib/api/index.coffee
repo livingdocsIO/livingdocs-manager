@@ -45,7 +45,7 @@ module.exports = api =
 
     request
       method: 'post'
-      url: options.host+'/authenticate'
+      url: options.host+'/auth/local/login'
       body:
         username: options.user
         password: options.password
