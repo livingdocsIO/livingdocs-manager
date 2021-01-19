@@ -1,4 +1,4 @@
-request = require('request').defaults({jar: true})
+request = require('request')
 _ = require('lodash')
 parseWarningHeader = require('warning-header-parser')
 log = require('npmlog')
